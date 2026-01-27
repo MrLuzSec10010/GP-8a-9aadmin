@@ -26,7 +26,7 @@ export default function AuditLogsPage() {
     setLoading(true);
     try {
       const params = new URLSearchParams();
-      if (entityFilter) params.append('entity_type', entityFilter);
+      if (entityFilter && entityFilter !== 'all') params.append('entity_type', entityFilter);
       
       const response = await axios.get(`${API}/audit-logs?${params.toString()}`);
       setLogs(response.data);
