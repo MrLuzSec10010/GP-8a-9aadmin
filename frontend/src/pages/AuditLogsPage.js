@@ -22,11 +22,7 @@ export default function AuditLogsPage() {
   const [loading, setLoading] = useState(true);
   const [entityFilter, setEntityFilter] = useState('');
 
-  useEffect(() => {
-    fetchLogs();
-  }, [entityFilter]);
-
-  const fetchLogs = async () => {
+  const fetchLogs = useCallback(async () => {
     setLoading(true);
     try {
       const params = new URLSearchParams();
@@ -39,7 +35,11 @@ export default function AuditLogsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [entityFilter]);
+
+  useEffect(() => {
+    fetchLogs();
+  }, [fetchLogs]);
 
   const getEntityIcon = (type) => {
     const icons = {
