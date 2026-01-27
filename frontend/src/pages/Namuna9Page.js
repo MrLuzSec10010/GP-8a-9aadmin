@@ -29,7 +29,7 @@ export default function Namuna9Page() {
   const [properties, setProperties] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
-  const [wardFilter, setWardFilter] = useState('');
+  const [wardFilter, setWardFilter] = useState('all');
   const [dialogOpen, setDialogOpen] = useState(false);
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
   const [selectedProperty, setSelectedProperty] = useState(null);
