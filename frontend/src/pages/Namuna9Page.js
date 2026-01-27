@@ -62,7 +62,7 @@ export default function Namuna9Page() {
     try {
       const params = new URLSearchParams();
       if (search) params.append('search', search);
-      if (wardFilter) params.append('ward', wardFilter);
+      if (wardFilter && wardFilter !== 'all') params.append('ward', wardFilter);
       
       const response = await axios.get(`${API}/properties?${params.toString()}`);
       setProperties(response.data);
