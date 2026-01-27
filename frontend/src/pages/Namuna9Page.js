@@ -241,7 +241,7 @@ export default function Namuna9Page() {
                   <SelectValue placeholder={language === 'mr' ? 'वॉर्ड निवडा' : 'Select Ward'} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">{language === 'mr' ? 'सर्व वॉर्ड' : 'All Wards'}</SelectItem>
+                  <SelectItem value="all">{language === 'mr' ? 'सर्व वॉर्ड' : 'All Wards'}</SelectItem>
                   {uniqueWards.map(ward => (
                     <SelectItem key={ward} value={ward}>
                       {language === 'mr' ? `वॉर्ड ${ward}` : `Ward ${ward}`}
