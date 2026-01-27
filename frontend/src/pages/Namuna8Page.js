@@ -46,11 +46,7 @@ export default function Namuna8Page() {
     `${currentYear - 2}-${currentYear - 1}`
   ];
 
-  useEffect(() => {
-    fetchData();
-  }, [yearFilter, statusFilter]);
-
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     setLoading(true);
     try {
       const params = new URLSearchParams();
@@ -69,7 +65,11 @@ export default function Namuna8Page() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [yearFilter, statusFilter]);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   const handleGenerateDemand = async () => {
     if (!selectedPropertyId || !selectedYear) {
