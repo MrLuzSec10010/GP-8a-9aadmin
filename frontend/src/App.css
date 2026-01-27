@@ -1,34 +1,217 @@
-.App-logo {
-    height: 40vmin;
-    pointer-events: none;
+/* Government ERP Specific Styles */
+
+/* Login Page Background */
+.login-bg {
+  background-image: linear-gradient(to right, rgba(0, 51, 102, 0.92), rgba(0, 51, 102, 0.75)), 
+                    url('https://images.pexels.com/photos/7415332/pexels-photo-7415332.jpeg');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-    .App-logo {
-        animation: App-logo-spin infinite 20s linear;
-    }
+/* Emblem Animation */
+@keyframes pulse-gold {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(212, 175, 55, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 10px rgba(212, 175, 55, 0);
+  }
 }
 
-.App-header {
-    background-color: #0f0f10;
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    font-size: calc(10px + 2vmin);
-    color: white;
+.emblem-pulse {
+  animation: pulse-gold 2s infinite;
 }
 
-.App-link {
-    color: #61dafb;
+/* Table Hover Effects */
+.gov-table-row {
+  transition: background-color 0.15s ease;
 }
 
-@keyframes App-logo-spin {
-    from {
-        transform: rotate(0deg);
-    }
-    to {
-        transform: rotate(360deg);
-    }
+.gov-table-row:hover {
+  background-color: rgba(0, 51, 102, 0.04);
+}
+
+/* Status Colors */
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.status-badge-paid {
+  background-color: #dcfce7;
+  color: #166534;
+}
+
+.status-badge-pending {
+  background-color: #fef3c7;
+  color: #92400e;
+}
+
+.status-badge-partial {
+  background-color: #dbeafe;
+  color: #1e40af;
+}
+
+/* Card Shadows */
+.card-shadow {
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1);
+}
+
+.card-shadow-hover:hover {
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+}
+
+/* Gold Accent Border */
+.gold-accent {
+  border-left: 4px solid #D4AF37;
+}
+
+/* Input Focus Ring */
+.input-gov:focus {
+  outline: none;
+  ring: 2px;
+  ring-color: #003366;
+  ring-offset: 2px;
+}
+
+/* Button Styles */
+.btn-primary {
+  background-color: #003366;
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 0.375rem;
+  font-weight: 500;
+  transition: background-color 0.15s ease;
+}
+
+.btn-primary:hover {
+  background-color: #002244;
+}
+
+.btn-secondary {
+  background-color: white;
+  border: 1px solid #e2e8f0;
+  color: #334155;
+  padding: 0.5rem 1rem;
+  border-radius: 0.375rem;
+  font-weight: 500;
+  transition: background-color 0.15s ease;
+}
+
+.btn-secondary:hover {
+  background-color: #f8fafc;
+}
+
+/* Table Sticky Column */
+.sticky-col {
+  position: sticky;
+  left: 0;
+  background: white;
+  z-index: 1;
+}
+
+.sticky-col::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: linear-gradient(to right, rgba(0, 0, 0, 0.05), transparent);
+}
+
+/* Currency Display */
+.currency-display {
+  font-family: 'JetBrains Mono', monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Loading Spinner */
+.spinner {
+  border: 3px solid #e2e8f0;
+  border-top-color: #003366;
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Tooltip */
+.tooltip {
+  position: relative;
+}
+
+.tooltip::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 0.5rem 0.75rem;
+  background: #1e293b;
+  color: white;
+  font-size: 0.75rem;
+  border-radius: 0.375rem;
+  white-space: nowrap;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.2s, visibility 0.2s;
+}
+
+.tooltip:hover::after {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* Scrollable Table Container */
+.table-container {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Print Specific */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  
+  .print-only {
+    display: block !important;
+  }
+  
+  body {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}
+
+/* Responsive Sidebar */
+@media (max-width: 768px) {
+  .sidebar {
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+  }
+  
+  .sidebar.open {
+    transform: translateX(0);
+  }
+  
+  .main-content {
+    margin-left: 0 !important;
+  }
+  
+  .main-header {
+    left: 0 !important;
+  }
 }
