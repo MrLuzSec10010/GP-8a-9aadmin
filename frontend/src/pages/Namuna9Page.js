@@ -57,11 +57,7 @@ export default function Namuna9Page() {
 
   const canEdit = hasRole(['super_admin', 'gramsevak', 'data_entry', 'talathi']);
 
-  useEffect(() => {
-    fetchProperties();
-  }, [search, wardFilter]);
-
-  const fetchProperties = async () => {
+  const fetchProperties = useCallback(async () => {
     setLoading(true);
     try {
       const params = new URLSearchParams();
@@ -75,7 +71,11 @@ export default function Namuna9Page() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [search, wardFilter]);
+
+  useEffect(() => {
+    fetchProperties();
+  }, [fetchProperties]);
 
   const handleInputChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
