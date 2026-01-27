@@ -210,7 +210,7 @@ export default function Namuna8Page() {
                   <SelectValue placeholder={t('status')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">{language === 'mr' ? 'सर्व स्थिती' : 'All Status'}</SelectItem>
+                  <SelectItem value="all">{language === 'mr' ? 'सर्व स्थिती' : 'All Status'}</SelectItem>
                   <SelectItem value="pending">{t('pending')}</SelectItem>
                   <SelectItem value="partial">{t('partial')}</SelectItem>
                   <SelectItem value="paid">{t('paid')}</SelectItem>
