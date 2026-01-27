@@ -197,7 +197,7 @@ export default function Namuna8Page() {
                   <SelectValue placeholder={t('selectYear')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">{language === 'mr' ? 'सर्व वर्षे' : 'All Years'}</SelectItem>
+                  <SelectItem value="all">{language === 'mr' ? 'सर्व वर्षे' : 'All Years'}</SelectItem>
                   {financialYears.map(year => (
                     <SelectItem key={year} value={year}>{year}</SelectItem>
                   ))}
