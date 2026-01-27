@@ -20,7 +20,7 @@ export default function AuditLogsPage() {
   const { t, language } = useLanguage();
   const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [entityFilter, setEntityFilter] = useState('');
+  const [entityFilter, setEntityFilter] = useState('all');
 
   const fetchLogs = useCallback(async () => {
     setLoading(true);
