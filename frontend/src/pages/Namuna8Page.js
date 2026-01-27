@@ -50,8 +50,8 @@ export default function Namuna8Page() {
     setLoading(true);
     try {
       const params = new URLSearchParams();
-      if (yearFilter) params.append('financial_year', yearFilter);
-      if (statusFilter) params.append('status', statusFilter);
+      if (yearFilter && yearFilter !== 'all') params.append('financial_year', yearFilter);
+      if (statusFilter && statusFilter !== 'all') params.append('status', statusFilter);
       
       const [demandsRes, propertiesRes] = await Promise.all([
         axios.get(`${API}/demands?${params.toString()}`),
