@@ -107,7 +107,7 @@ export default function AuditLogsPage() {
                   <SelectValue placeholder={t('entityType')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">{language === 'mr' ? 'सर्व प्रकार' : 'All Types'}</SelectItem>
+                  <SelectItem value="all">{language === 'mr' ? 'सर्व प्रकार' : 'All Types'}</SelectItem>
                   <SelectItem value="property">{language === 'mr' ? 'मालमत्ता' : 'Property'}</SelectItem>
                   <SelectItem value="demand">{language === 'mr' ? 'मागणी' : 'Demand'}</SelectItem>
                   <SelectItem value="tax_rate">{language === 'mr' ? 'कर दर' : 'Tax Rate'}</SelectItem>
