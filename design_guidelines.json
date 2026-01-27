@@ -1,0 +1,125 @@
+{
+  "project_name": "Digital Gram Property & Tax Management System – Maharashtra",
+  "design_philosophy": {
+    "persona": "Bureaucratic Brutalism",
+    "core_principles": [
+      "Absolute Clarity: Data density without clutter.",
+      "Official Authority: Use official government colors (Deep Blue, White, Gold).",
+      "Paper Metaphor: UI should feel like a digitized high-quality official register.",
+      "Accessibility First: High contrast for government officials on older screens."
+    ],
+    "vibe": "Trustworthy, Efficient, Authoritative, 'Digital India'"
+  },
+  "typography": {
+    "font_family": {
+      "english": "Inter, sans-serif",
+      "marathi": "'Noto Sans Devanagari', sans-serif",
+      "mono": "JetBrains Mono, monospace"
+    },
+    "scale": {
+      "h1": "text-3xl font-bold tracking-tight text-slate-900",
+      "h2": "text-2xl font-semibold tracking-tight text-slate-900",
+      "h3": "text-xl font-semibold text-slate-800",
+      "body": "text-sm font-normal text-slate-700 leading-relaxed",
+      "caption": "text-xs font-medium text-slate-500 uppercase tracking-wider",
+      "table_header": "text-xs font-bold text-slate-700 uppercase tracking-wider bg-slate-50"
+    }
+  },
+  "colors": {
+    "palette": {
+      "primary": {
+        "DEFAULT": "#003366",
+        "foreground": "#FFFFFF",
+        "hover": "#002244",
+        "description": "Maha-Gov Deep Blue - Used for Sidebar, Primary Buttons, Header Accents"
+      },
+      "secondary": {
+        "DEFAULT": "#D4AF37",
+        "foreground": "#000000",
+        "description": "Ashoka Gold - Used for borders, active states, subtle highlights"
+      },
+      "background": {
+        "DEFAULT": "#F8F9FA",
+        "paper": "#FFFFFF",
+        "subtle": "#E2E8F0"
+      },
+      "status": {
+        "success": "#15803d",
+        "warning": "#b45309",
+        "error": "#b91c1c",
+        "info": "#0369a1"
+      }
+    },
+    "gradients": {
+      "login_overlay": "linear-gradient(to right, rgba(0, 51, 102, 0.9), rgba(0, 51, 102, 0.7))",
+      "header_strip": "linear-gradient(90deg, #003366 0%, #004080 100%)"
+    }
+  },
+  "layout": {
+    "grid_system": "Bento Grid Mode B (High Density)",
+    "spacing": {
+      "container_padding": "p-6 md:p-8",
+      "card_padding": "p-6",
+      "section_gap": "gap-6"
+    },
+    "structure": {
+      "sidebar": "w-64 fixed left-0 top-0 h-full bg-[#003366] text-white z-50",
+      "header": "h-16 fixed top-0 right-0 left-64 bg-white border-b border-slate-200 z-40 flex items-center px-6 justify-between shadow-sm",
+      "main_content": "ml-64 pt-16 min-h-screen bg-slate-50"
+    }
+  },
+  "components": {
+    "buttons": {
+      "primary": "bg-[#003366] hover:bg-[#002244] text-white shadow-sm rounded-md px-4 py-2 font-medium transition-all",
+      "secondary": "bg-white border border-slate-300 text-slate-700 hover:bg-slate-50 shadow-sm rounded-md px-4 py-2 font-medium",
+      "destructive": "bg-red-600 hover:bg-red-700 text-white rounded-md px-4 py-2"
+    },
+    "cards": {
+      "dashboard_stat": "bg-white border border-slate-200 rounded-lg shadow-sm p-6 hover:shadow-md transition-shadow",
+      "register_sheet": "bg-white border border-slate-200 rounded-none shadow-none print:border-none"
+    },
+    "tables": {
+      "style": "w-full text-sm text-left",
+      "header": "bg-slate-100 text-slate-700 font-bold uppercase text-xs border-b border-slate-300",
+      "row": "border-b border-slate-200 hover:bg-blue-50/50 transition-colors",
+      "cell": "px-4 py-3"
+    },
+    "inputs": {
+      "default": "flex h-10 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#003366] focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+    }
+  },
+  "assets": {
+    "images": {
+      "login_bg": "https://images.pexels.com/photos/7415332/pexels-photo-7415332.jpeg",
+      "emblem_placeholder": "https://upload.wikimedia.org/wikipedia/commons/thumb/5/55/Emblem_of_India.svg/1200px-Emblem_of_India.svg.png",
+      "maharashtra_logo_placeholder": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/03/Seal_of_Maharashtra.svg/1200px-Seal_of_Maharashtra.svg.png"
+    },
+    "icons": {
+      "library": "lucide-react",
+      "style": "stroke-width={1.5} size={20}"
+    }
+  },
+  "specific_modules": {
+    "namuna_8_9": {
+      "instruction": "These are official registers. They MUST be horizontally scrollable if columns exceed width. Use sticky first column for Property ID/Owner Name. Headers must be bilingual (English + Marathi).",
+      "table_class": "border-collapse border border-slate-400",
+      "th_class": "border border-slate-400 bg-slate-100 p-2 text-center font-bold",
+      "td_class": "border border-slate-400 p-2"
+    },
+    "tax_engine": {
+      "instruction": "Use clear input groups for rates. Auto-calculate totals instantly. Show breakdown clearly."
+    }
+  },
+  "universal_guidelines": [
+    "Always use 'Inter' for English and 'Noto Sans' for Marathi.",
+    "Ensure high contrast (WCAG AA) for all text.",
+    "Interactive elements must have a focus ring for accessibility.",
+    "Use 'Lakh' and 'Crore' for currency formatting (₹ 1,50,000).",
+    "Dates must be DD/MM/YYYY.",
+    "Do not use gradients for backgrounds except on the Login page.",
+    "All inputs must have clear labels.",
+    "Use 'sonner' for toast notifications.",
+    "Use 'lucide-react' for icons."
+  ],
+  "instructions_to_main_agent": "You are building a government system. Prioritize correctness, data density, and official aesthetics over 'flashy' animations. The UI should feel solid and permanent. Use the provided color palette strictly. Implement the Sidebar layout defined in 'layout.structure'. For Namuna 8 and 9, create complex tables that mimic the physical paper registers."
+}
