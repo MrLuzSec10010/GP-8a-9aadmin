@@ -26,8 +26,8 @@ export default function Namuna8Page() {
   const [demands, setDemands] = useState([]);
   const [properties, setProperties] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [yearFilter, setYearFilter] = useState('');
-  const [statusFilter, setStatusFilter] = useState('');
+  const [yearFilter, setYearFilter] = useState('all');
+  const [statusFilter, setStatusFilter] = useState('all');
   const [generateDialogOpen, setGenerateDialogOpen] = useState(false);
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
   const [selectedDemand, setSelectedDemand] = useState(null);
