@@ -20,7 +20,8 @@ import {
   RefreshCw,
   Download,
   Database,
-  Printer
+  Printer,
+  Trash2
 } from 'lucide-react';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
@@ -207,6 +208,26 @@ export default function Namuna9Page() {
       toast.error(error.response?.data?.detail || 'Failed to save property');
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleDelete = async (property, e) => {
+    e.stopPropagation();
+    if (!window.confirm(language === 'mr' ? 'तुम्हाला खात्री आहे की तुम्ही ही मालमत्ता हटवू इच्छिता?' : 'Are you sure you want to delete this property?')) {
+      return;
+    }
+    const reason = window.prompt(language === 'mr' ? 'हटवण्याचे कारण सांगा:' : 'Enter reason for deletion:');
+    if (!reason) {
+      toast.error(language === 'mr' ? 'कारण देणे आवश्यक आहे' : 'Reason is required');
+      return;
+    }
+
+    try {
+      await axios.delete(`${API}/properties/${property.id}`, { params: { reason } });
+      toast.success(language === 'mr' ? 'मालमत्ता हटवली' : 'Property deleted successfully');
+      fetchProperties();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to delete property');
     }
   };
 
@@ -475,14 +496,28 @@ export default function Namuna9Page() {
                       <td className="text-sm">{property.survey_no || property.gat_no || '-'}</td>
                       {canEdit && (
                         <td className="text-center" onClick={(e) => e.stopPropagation()}>
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            onClick={(e) => openEditDialog(property, e)}
-                            data-testid={`edit-property-${property.id}`}
-                          >
-                            <Edit2 size={16} />
-                          </Button>
+                          <div className="flex items-center justify-center gap-1">
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              onClick={(e) => openEditDialog(property, e)}
+                              data-testid={`edit-property-${property.id}`}
+                              className="h-8 w-8 p-0"
+                            >
+                              <Edit2 size={16} className="text-blue-600" />
+                            </Button>
+                            {hasRole('super_admin') && (
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                onClick={(e) => handleDelete(property, e)}
+                                data-testid={`delete-property-${property.id}`}
+                                className="h-8 w-8 p-0"
+                              >
+                                <Trash2 size={16} className="text-red-500" />
+                              </Button>
+                            )}
+                          </div>
                         </td>
                       )}
                     </tr>

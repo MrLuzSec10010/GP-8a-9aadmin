@@ -32,6 +32,12 @@ JWT_EXPIRATION_HOURS = 24
 DEMO_MODE = os.environ.get('DEMO_MODE', 'true').lower() == 'true'
 DEMO_OTP = "123456"
 
+# Village / Admin Configuration
+DEFAULT_VILLAGE = os.environ.get('DEFAULT_VILLAGE', 'कळंबा बु. (Kalamba Bk)')
+DEFAULT_TALUKA = os.environ.get('DEFAULT_TALUKA', 'हातकणंगले')
+DEFAULT_DISTRICT = os.environ.get('DEFAULT_DISTRICT', 'कोल्हापूर')
+SUPER_ADMIN_PHONE = os.environ.get('SUPER_ADMIN_PHONE', '7498086090')
+
 # Create the main app
 app = FastAPI(title="Digital Gram Property & Tax Management System - Maharashtra")
 
@@ -192,6 +198,14 @@ class DemandCreate(BaseModel):
     property_id: str
     financial_year: str
 
+class BulkDemandRequest(BaseModel):
+    financial_year: str
+
+class PaymentRequest(BaseModel):
+    demand_id: str
+    amount: float
+    payment_mode: str
+
 class DemandResponse(BaseModel):
     model_config = ConfigDict(extra="ignore")
     id: str
@@ -299,6 +313,52 @@ def get_current_financial_year():
     return f"{now.year - 1}-{now.year}"
 
 # ===================== AUTH ROUTES =====================
+
+@api_router.post("/init-super-admin")
+async def init_super_admin():
+    """One-time endpoint: creates the first Super Admin. Disabled once any super_admin exists."""
+    existing_admin = await db.users.find_one({"role": UserRole.SUPER_ADMIN})
+    if existing_admin:
+        raise HTTPException(status_code=400, detail="Super Admin already initialized. This endpoint is now disabled.")
+
+    otp_doc = {
+        "id": str(uuid.uuid4()),
+        "phone": SUPER_ADMIN_PHONE,
+        "otp": DEMO_OTP,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "expires_at": (datetime.now(timezone.utc) + timedelta(minutes=60)).isoformat(),
+        "verified": False
+    }
+    await db.otp_sessions.delete_many({"phone": SUPER_ADMIN_PHONE})
+    await db.otp_sessions.insert_one(otp_doc)
+
+    existing_user = await db.users.find_one({"phone": SUPER_ADMIN_PHONE}, {"_id": 0})
+    if existing_user:
+        await db.users.update_one(
+            {"phone": SUPER_ADMIN_PHONE},
+            {"$set": {"role": UserRole.SUPER_ADMIN, "name": "Super Admin - Kalamba Bk",
+                      "village": DEFAULT_VILLAGE, "taluka": DEFAULT_TALUKA, "district": DEFAULT_DISTRICT}}
+        )
+    else:
+        new_admin = {
+            "id": str(uuid.uuid4()),
+            "name": "Super Admin - Kalamba Bk",
+            "phone": SUPER_ADMIN_PHONE,
+            "role": UserRole.SUPER_ADMIN,
+            "village": DEFAULT_VILLAGE,
+            "taluka": DEFAULT_TALUKA,
+            "district": DEFAULT_DISTRICT,
+            "created_at": datetime.now(timezone.utc).isoformat()
+        }
+        await db.users.insert_one(new_admin)
+
+    logger.info(f"Super Admin initialized: {SUPER_ADMIN_PHONE}")
+    return {
+        "message": "✅ Super Admin created for Kalamba Bk Gram Panchayat!",
+        "phone": SUPER_ADMIN_PHONE,
+        "otp": DEMO_OTP,
+        "next_step": "Go to http://localhost:3000 → Login with this phone and OTP 123456"
+    }
 
 @api_router.post("/auth/send-otp")
 async def send_otp(request: OTPRequest):
@@ -419,6 +479,29 @@ async def create_property(data: PropertyCreate, user: dict = Depends(verify_toke
     await db.properties.insert_one(property_doc)
     await create_audit_log("property", property_doc["id"], "create", user, None, property_doc, "New property created")
     
+    # Auto-generate demand for current financial year
+    current_year = datetime.now().year
+    current_fy = f"{current_year}-{current_year + 1}"
+    tax_calc = await calculate_tax(property_doc)
+    demand_doc = {
+        "id": str(uuid.uuid4()),
+        "demand_id": generate_demand_id(),
+        "property_id": property_doc["id"],
+        "financial_year": current_fy,
+        **tax_calc,
+        "arrears": 0,
+        "rebate": 0,
+        "penalty": 0,
+        "net_demand": tax_calc["total_tax"],
+        "amount_paid": 0,
+        "balance": tax_calc["total_tax"],
+        "status": "pending",
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "updated_at": datetime.now(timezone.utc).isoformat(),
+        "created_by": user["id"]
+    }
+    await db.demands.insert_one(demand_doc)
+    
     return PropertyResponse(**property_doc)
 
 @api_router.get("/properties", response_model=List[PropertyResponse])
@@ -534,21 +617,22 @@ async def lock_tax_rate(rate_id: str, user: dict = Depends(verify_token)):
 
 # ===================== DEMAND ROUTES (NAMUNA 8) =====================
 
-async def calculate_tax(property_doc: dict, tax_rate: dict) -> dict:
+async def calculate_tax(property_doc: dict) -> dict:
     area = property_doc.get("built_up_area_sqm", 0)
-    floor_count = str(property_doc.get("floor_count", 1))
-    construction_type = property_doc.get("construction_type", "pucca")
+    usage_type = property_doc.get("usage_type", "residential")
     
-    base_rate = tax_rate.get("rate_per_sqm", 0)
-    floor_factor = tax_rate.get("floor_factor", {}).get(floor_count, 1.0)
-    construction_factor = tax_rate.get("construction_factor", {}).get(construction_type, 1.0)
+    rate = 2 # residential
+    if usage_type == "commercial":
+        rate = 5
+    elif usage_type == "mixed":
+        rate = 3
+        
+    house_tax = area * rate
+    water_tax = 500 if property_doc.get("water_connection") else 0
+    light_tax = 0
+    cleaning_tax = 0
     
-    house_tax = area * base_rate * floor_factor * construction_factor
-    water_tax = tax_rate.get("water_tax_rate", 0) if property_doc.get("water_connection") else 0
-    light_tax = tax_rate.get("light_tax_rate", 0) if property_doc.get("electricity_connection") else 0
-    cleaning_tax = tax_rate.get("cleaning_tax_rate", 0)
-    
-    total_tax = house_tax + water_tax + light_tax + cleaning_tax
+    total_tax = house_tax + water_tax
     
     return {
         "house_tax": round(house_tax, 2),
@@ -571,11 +655,7 @@ async def create_demand(data: DemandCreate, user: dict = Depends(verify_token)):
     if existing_demand:
         raise HTTPException(status_code=400, detail="Demand already exists for this property and year")
     
-    tax_rate = await db.tax_rates.find_one({"financial_year": data.financial_year, "usage_type": property_doc["usage_type"]}, {"_id": 0})
-    if not tax_rate:
-        raise HTTPException(status_code=400, detail="Tax rate not configured for this year and usage type")
-    
-    tax_calc = await calculate_tax(property_doc, tax_rate)
+    tax_calc = await calculate_tax(property_doc)
     
     previous_demand = await db.demands.find_one(
         {"property_id": data.property_id, "balance": {"$gt": 0}},
@@ -616,6 +696,61 @@ async def create_demand(data: DemandCreate, user: dict = Depends(verify_token)):
     
     return DemandResponse(**demand_doc)
 
+@api_router.post("/demand/generate")
+async def generate_bulk_demands(data: BulkDemandRequest, user: dict = Depends(verify_token)):
+    if user["role"] not in [UserRole.SUPER_ADMIN, UserRole.GRAMSEVAK, UserRole.DATA_ENTRY, UserRole.TALATHI]:
+        raise HTTPException(status_code=403, detail="Access denied")
+
+    properties = await db.properties.find({}).to_list(10000)
+    generated_count = 0
+    skipped_count = 0
+
+    for property_doc in properties:
+        property_id = property_doc["id"]
+        
+        existing_demand = await db.demands.find_one({
+            "property_id": property_id,
+            "financial_year": data.financial_year
+        })
+        if existing_demand:
+            skipped_count += 1
+            continue
+
+        tax_calc = await calculate_tax(property_doc)
+        previous_demand = await db.demands.find_one(
+            {"property_id": property_id, "balance": {"$gt": 0}},
+            {"_id": 0},
+            sort=[("financial_year", -1)]
+        )
+        arrears = previous_demand["balance"] if previous_demand else 0
+        net_demand = tax_calc["total_tax"] + arrears
+
+        demand_doc = {
+            "id": str(uuid.uuid4()),
+            "demand_id": generate_demand_id(),
+            "property_id": property_id,
+            "financial_year": data.financial_year,
+            **tax_calc,
+            "arrears": round(arrears, 2),
+            "rebate": 0,
+            "penalty": 0,
+            "net_demand": round(net_demand, 2),
+            "amount_paid": 0,
+            "balance": round(net_demand, 2),
+            "status": "pending",
+            "created_at": datetime.now(timezone.utc).isoformat(),
+            "updated_at": datetime.now(timezone.utc).isoformat(),
+            "created_by": user["id"]
+        }
+        await db.demands.insert_one(demand_doc)
+        generated_count += 1
+
+    return {
+        "message": "Demands generated successfully",
+        "generated_count": generated_count,
+        "skipped_count": skipped_count
+    }
+
 @api_router.get("/demands", response_model=List[DemandResponse])
 async def get_demands(
     financial_year: Optional[str] = None,
@@ -640,22 +775,28 @@ async def get_demands(
                 "owner_name": prop["owner_name"],
                 "owner_name_mr": prop["owner_name_mr"],
                 "house_no": prop["house_no"],
-                "ward_no": prop["ward_no"]
+                "ward_no": prop["ward_no"],
+                "usage_type": prop.get("usage_type", "-"),
+                "area": prop.get("built_up_area_sqm", prop.get("plot_area_sqm", 0))
             }
     
     return [DemandResponse(**d) for d in demands]
 
-@api_router.post("/demands/{demand_id}/payment")
-async def record_payment(demand_id: str, amount: float, payment_mode: str = "cash", user: dict = Depends(verify_token)):
+@api_router.post("/payment/pay")
+async def process_payment(data: PaymentRequest, user: dict = Depends(verify_token)):
     if user["role"] not in [UserRole.SUPER_ADMIN, UserRole.GRAMSEVAK, UserRole.DATA_ENTRY, UserRole.TALATHI]:
         raise HTTPException(status_code=403, detail="Access denied")
     
-    demand = await db.demands.find_one({"id": demand_id}, {"_id": 0})
+    demand = await db.demands.find_one({"id": data.demand_id}, {"_id": 0})
     if not demand:
         raise HTTPException(status_code=404, detail="Demand not found")
+        
+    prop_details = await db.properties.find_one({"id": demand["property_id"]}, {"_id": 0})
+    if not prop_details:
+        raise HTTPException(status_code=404, detail="Property not found")
     
     old_amount_paid = demand["amount_paid"]
-    new_amount_paid = old_amount_paid + amount
+    new_amount_paid = old_amount_paid + data.amount
     new_balance = demand["net_demand"] - new_amount_paid
     new_status = "paid" if new_balance <= 0 else "partial"
     
@@ -666,23 +807,40 @@ async def record_payment(demand_id: str, amount: float, payment_mode: str = "cas
         "updated_at": datetime.now(timezone.utc).isoformat()
     }
     
-    await db.demands.update_one({"id": demand_id}, {"$set": update_data})
+    await db.demands.update_one({"id": data.demand_id}, {"$set": update_data})
     
+    receipt_no = f"RCP-{datetime.now().strftime('%Y%m%d%H%M%S')}"
     payment_doc = {
         "id": str(uuid.uuid4()),
-        "demand_id": demand_id,
+        "demand_id": data.demand_id,
         "property_id": demand["property_id"],
-        "amount": amount,
-        "payment_mode": payment_mode,
-        "receipt_no": f"RCP-{datetime.now().strftime('%Y%m%d%H%M%S')}",
+        "amount": data.amount,
+        "payment_mode": data.payment_mode,
+        "receipt_no": receipt_no,
         "created_at": datetime.now(timezone.utc).isoformat(),
         "created_by": user["id"]
     }
     await db.payments.insert_one(payment_doc)
     
-    await create_audit_log("demand", demand_id, "payment", user, {"amount_paid": old_amount_paid}, {"amount_paid": new_amount_paid, "payment": amount}, f"Payment of ₹{amount} received via {payment_mode}")
+    await create_audit_log("demand", data.demand_id, "payment", user, {"amount_paid": old_amount_paid}, {"amount_paid": new_amount_paid, "payment": data.amount}, f"Payment of ₹{data.amount} received via {data.payment_mode}")
     
-    return {"message": "Payment recorded successfully", "receipt_no": payment_doc["receipt_no"], "balance": update_data["balance"]}
+    return {
+        "message": "Payment recorded successfully", 
+        "receipt_no": receipt_no, 
+        "balance": update_data["balance"],
+        "receipt_details": {
+            "property_id": prop_details["property_id"],
+            "owner_name": prop_details["owner_name"],
+            "owner_name_mr": prop_details["owner_name_mr"],
+            "financial_year": demand["financial_year"],
+            "total_demand": demand["net_demand"],
+            "amount_paid": data.amount,
+            "payment_mode": data.payment_mode,
+            "village": prop_details.get("village", "कळंबा बु."),
+            "taluka": prop_details.get("taluka", "हातकणंगले"),
+            "district": prop_details.get("district", "कोल्हापूर")
+        }
+    }
 
 # ===================== AUDIT LOG ROUTES =====================
 
@@ -870,8 +1028,8 @@ app.include_router(api_router)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_credentials=True,
-    allow_origins=os.environ.get('CORS_ORIGINS', '*').split(','),
+    allow_credentials=False,
+    allow_origins=["*"],
     allow_methods=["*"],
     allow_headers=["*"],
 )
