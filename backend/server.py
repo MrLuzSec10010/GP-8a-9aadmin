@@ -88,14 +88,17 @@ class TokenResponse(BaseModel):
 class PropertyCreate(BaseModel):
     owner_name: str
     owner_name_mr: str
+    father_name: Optional[str] = None
+    father_name_mr: Optional[str] = None
     house_no: str
     ward_no: str
     survey_no: Optional[str] = None
+    gat_no: Optional[str] = None
     plot_area_sqm: float
     built_up_area_sqm: float
     usage_type: str  # residential, commercial, mixed
     floor_count: int = 1
-    construction_type: str  # pucca, semi_pucca, kaccha
+    construction_type: str  # rcc, load_bearing, pucca, semi_pucca, kaccha
     water_connection: bool = False
     electricity_connection: bool = False
     village: str
@@ -103,13 +106,17 @@ class PropertyCreate(BaseModel):
     district: str
     address: Optional[str] = None
     phone: Optional[str] = None
+    assessment_year: Optional[str] = None
 
 class PropertyUpdate(BaseModel):
     owner_name: Optional[str] = None
     owner_name_mr: Optional[str] = None
+    father_name: Optional[str] = None
+    father_name_mr: Optional[str] = None
     house_no: Optional[str] = None
     ward_no: Optional[str] = None
     survey_no: Optional[str] = None
+    gat_no: Optional[str] = None
     plot_area_sqm: Optional[float] = None
     built_up_area_sqm: Optional[float] = None
     usage_type: Optional[str] = None
@@ -119,6 +126,7 @@ class PropertyUpdate(BaseModel):
     electricity_connection: Optional[bool] = None
     address: Optional[str] = None
     phone: Optional[str] = None
+    assessment_year: Optional[str] = None
     update_reason: str
 
 class PropertyResponse(BaseModel):
@@ -127,9 +135,12 @@ class PropertyResponse(BaseModel):
     property_id: str
     owner_name: str
     owner_name_mr: str
+    father_name: Optional[str] = None
+    father_name_mr: Optional[str] = None
     house_no: str
     ward_no: str
     survey_no: Optional[str] = None
+    gat_no: Optional[str] = None
     plot_area_sqm: float
     built_up_area_sqm: float
     usage_type: str
@@ -142,6 +153,7 @@ class PropertyResponse(BaseModel):
     district: str
     address: Optional[str] = None
     phone: Optional[str] = None
+    assessment_year: Optional[str] = None
     is_measured: bool
     created_at: str
     updated_at: str
