@@ -127,8 +127,8 @@ app.post('/api/auth/verify-otp', async (req, res) => {
   if (otp === '123456') {
     let user = await User.findOne({ phone });
     if (!user) {
-      user = new User({ 
-        phone, 
+      user = new User({
+        phone,
         name: phone === '7498086090' ? 'Admin' : 'New User',
         role: phone === '7498086090' ? 'super_admin' : 'gramsevak',
         village: process.env.DEFAULT_VILLAGE
@@ -179,7 +179,7 @@ app.post(['/api/property/add', '/api/properties'], authenticateToken, async (req
       district: process.env.DEFAULT_DISTRICT
     });
     const saved = await newProperty.save();
-    
+
     // Audit Log
     await new AuditLog({
       entity_type: 'property',
@@ -219,20 +219,20 @@ app.delete(['/api/property/delete/:id', '/api/properties/:id'], authenticateToke
 // --- Demand Endpoints ---
 const calculateTax = (prop, rate) => {
   const area = parseFloat(prop.built_up_area_sqm || 0);
-  
+
   // Logic: Residential = area * 2, Commercial = area * 5, Mixed = area * 3
   let rate_val = 2;
   if (prop.usage_type === 'commercial') rate_val = 5;
   else if (prop.usage_type === 'mixed') rate_val = 3;
-  
+
   if (rate && rate.rate_per_sqm) rate_val = rate.rate_per_sqm;
 
   const house_tax = area * rate_val;
   const water_tax = prop.water_connection ? (rate?.water_tax_rate || 500) : 0;
   const light_tax = rate?.light_tax_rate || 0;
   const health_tax = rate?.cleaning_tax_rate || 0;
-  
-  return { 
+
+  return {
     house_tax: Math.round(house_tax * 100) / 100,
     water_tax: Math.round(water_tax * 100) / 100,
     light_tax: Math.round(light_tax * 100) / 100,
@@ -248,7 +248,7 @@ app.post('/api/demand/generate', authenticateToken, async (req, res) => {
 
     console.log(`[DEMAND GEN] Starting for FY: ${financial_year}`);
     const properties = await Property.find();
-    
+
     let generated = 0;
     let skipped = 0;
     let errors = 0;
@@ -267,10 +267,10 @@ app.post('/api/demand/generate', authenticateToken, async (req, res) => {
           skipped++;
           continue;
         }
-        
+
         const rate = await TaxRate.findOne({ financial_year, usage_type: prop.usage_type });
         const { house_tax, water_tax, total_tax } = calculateTax(prop, rate);
-        
+
         // Arrears from previous years
         const previousDemands = await Demand.find({ property: prop._id }).sort({ created_at: -1 });
         const arrears = previousDemands.length > 0 ? previousDemands[0].balance : 0;
@@ -298,7 +298,7 @@ app.post('/api/demand/generate', authenticateToken, async (req, res) => {
         errors++;
       }
     }
-    
+
     res.json({ generated_count: generated, skipped_count: skipped, error_count: errors });
   } catch (err) {
     console.error('[DEMAND GEN] Fatal:', err);
@@ -325,7 +325,7 @@ app.get('/api/demand/list', authenticateToken, async (req, res) => {
     let query = {};
     if (financial_year && financial_year !== 'all') query.financial_year = financial_year;
     if (status && status !== 'all') query.status = status;
-    
+
     const demands = await Demand.find(query).populate('property');
     const flatDemands = demands.map(d => ({
       ...d._doc,
@@ -351,14 +351,14 @@ app.get('/api/demand/list', authenticateToken, async (req, res) => {
 app.post('/api/payment/pay', authenticateToken, async (req, res) => {
   try {
     const { demand_id, amount_paid, payment_mode } = req.body;
-    
+
     const demand = await Demand.findById(demand_id).populate('property');
     if (!demand) return res.status(404).json({ detail: 'Demand not found' });
 
     const amount = parseFloat(amount_paid);
     const new_paid_amount = (demand.paid_amount || 0) + amount;
     const new_balance = Math.max(0, (demand.net_demand || 0) - new_paid_amount);
-    
+
     demand.paid_amount = new_paid_amount;
     demand.balance = new_balance;
     demand.status = new_balance <= 0 ? 'paid' : 'partial';
@@ -468,10 +468,10 @@ app.get('/api/dashboard/stats', authenticateToken, async (req, res) => {
       { $group: { _id: null, total: { $sum: "$net_demand" }, collected: { $sum: "$paid_amount" } } }
     ]);
     const { total = 0, collected = 0 } = demandStats[0] || {};
-    
+
     const now = new Date();
     const sy = now.getMonth() >= 3 ? now.getFullYear() : now.getFullYear() - 1;
-    
+
     res.json({
       total_properties: totalProps,
       measured_properties: totalProps,
@@ -491,12 +491,14 @@ app.get('/api/dashboard/ward-summary', authenticateToken, async (req, res) => {
     const summary = await Demand.aggregate([
       { $lookup: { from: 'properties', localField: 'property', foreignField: '_id', as: 'p' } },
       { $unwind: '$p' },
-      { $group: { 
-        _id: '$p.ward_no', 
-        demand: { $sum: '$total_tax' }, 
-        collection: { $sum: '$paid_amount' }, 
-        arrears: { $sum: '$balance' } 
-      }},
+      {
+        $group: {
+          _id: '$p.ward_no',
+          demand: { $sum: '$total_tax' },
+          collection: { $sum: '$paid_amount' },
+          arrears: { $sum: '$balance' }
+        }
+      },
       { $project: { ward: '$_id', demand: 1, collection: 1, arrears: 1, _id: 0 } },
       { $sort: { ward: 1 } }
     ]);

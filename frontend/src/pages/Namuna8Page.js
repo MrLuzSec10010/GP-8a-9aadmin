@@ -135,7 +135,7 @@ export default function Namuna8Page() {
         amount_paid: amount,
         payment_mode: paymentMode
       });
-      
+
       console.log("[PAYMENT] Success:", response.data);
       toast.success(`${t('paymentRecorded')} - Receipt: ${response.data.receipt_no}`);
       setPaymentDialogOpen(false);
@@ -144,7 +144,7 @@ export default function Namuna8Page() {
         ...response.data.receipt_details,
         receipt_no: response.data.receipt_no
       };
-      
+
       setGeneratedReceipt(receiptToSave);
       setShowReceiptDialog(true);
 
@@ -218,8 +218,8 @@ export default function Namuna8Page() {
         <thead>
           <tr style="background-color: #f0f0f0;">
             ${[
-              "१", "२", "३", "४", "५", "६", "७", "८", "९", "१०", "११", "१२", "१३", "१४", "१५", "१६", "१७", "१८", "१९"
-            ].map(n => `<th style="border: 1px solid black; padding: 4px;">${n}</th>`).join('')}
+        "१", "२", "३", "४", "५", "६", "७", "८", "९", "१०", "११", "१२", "१३", "१४", "१५", "१६", "१७", "१८", "१९"
+      ].map(n => `<th style="border: 1px solid black; padding: 4px;">${n}</th>`).join('')}
           </tr>
           <tr style="background-color: #e0e0e0; font-size: 8px;">
             <th style="border: 1px solid black; padding: 4px;">अनुक्रमणिका</th>
@@ -245,9 +245,9 @@ export default function Namuna8Page() {
         </thead>
         <tbody>
           ${dataSource.map((d, i) => {
-            const prop = d.property || d.property_details || {};
-            const capVal = (d.house_tax * 12.5).toFixed(0);
-            return `
+        const prop = d.property || d.property_details || {};
+        const capVal = (d.house_tax * 12.5).toFixed(0);
+        return `
               <tr>
                 <td style="border: 1px solid black; padding: 4px; text-align: center;">${i + 1}</td>
                 <td style="border: 1px solid black; padding: 4px; text-align: center;">${prop.house_no || prop.property_id || '-'}</td>
@@ -270,7 +270,7 @@ export default function Namuna8Page() {
                 <td style="border: 1px solid black; padding: 4px;"></td>
               </tr>
             `;
-          }).join('')}
+      }).join('')}
         </tbody>
       </table>
       <div style="margin-top: 40px; display: flex; justify-content: space-between; padding: 0 40px;">
@@ -308,11 +308,11 @@ export default function Namuna8Page() {
         html2canvas: { scale: 2, useCORS: true },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
       };
-      
+
       html2pdf().set(opt).from(element).save();
       return;
     }
-    
+
     try {
       const doc = new jsPDF();
       doc.setFontSize(18);
@@ -878,11 +878,11 @@ export default function Namuna8Page() {
                       <td className="border border-slate-800 p-1 text-center">-</td>
                       <td className="border border-slate-800 p-1 text-center">{(previewDemand.house_tax * 12.5).toFixed(0)}</td>
                       <td className="border border-slate-800 p-1 text-center">0.5%</td>
-                      <td style="border-right-width: 1px;" className="border border-slate-800 p-1 text-right">{previewDemand.house_tax.toFixed(2)}</td>
-                      <td style="border-right-width: 1px;" className="border border-slate-800 p-1 text-right">{(previewDemand.light_tax || 0).toFixed(2)}</td>
-                      <td style="border-right-width: 1px;" className="border border-slate-800 p-1 text-right">{(previewDemand.health_tax || 0).toFixed(2)}</td>
-                      <td style="border-right-width: 1px;" className="border border-slate-800 p-1 text-right">{previewDemand.water_tax.toFixed(2)}</td>
-                      <td style="border-right-width: 1px;" className="border border-slate-800 p-1 text-right font-bold text-blue-800">{previewDemand.total_tax.toFixed(2)}</td>
+                      <td style={{ borderRightWidth: "1px" }} className="border border-slate-800 p-1 text-right">{previewDemand.house_tax.toFixed(2)}</td>
+                      <td style={{ borderRightWidth: "1px" }} className="border border-slate-800 p-1 text-right">{(previewDemand.light_tax || 0).toFixed(2)}</td>
+                      <td style={{ borderRightWidth: "1px" }} className="border border-slate-800 p-1 text-right">{(previewDemand.health_tax || 0).toFixed(2)}</td>
+                      <td style={{ borderRightWidth: "1px" }} className="border border-slate-800 p-1 text-right">{previewDemand.water_tax.toFixed(2)}</td>
+                      <td style={{ borderRightWidth: "1px" }} className="border border-slate-800 p-1 text-right font-bold text-blue-800">{previewDemand.total_tax.toFixed(2)}</td>
                       <td className="border border-slate-800 p-1"></td>
                     </tr>
                   </tbody>
