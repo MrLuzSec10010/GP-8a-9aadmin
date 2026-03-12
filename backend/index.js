@@ -123,39 +123,22 @@ app.post('/api/auth/send-otp', (req, res) => {
 });
 
 app.post('/api/auth/verify-otp', async (req, res) => {
-  try {
-    const { otp, phone } = req.body;
-    console.log(`[AUTH] Verifying OTP for phone: ${phone}`);
-    
-    if (otp === '123456') {
-      let user = await User.findOne({ phone });
-      if (!user) {
-        console.log(`[AUTH] Creating new user for: ${phone}`);
-        user = new User({
-          phone,
-          name: phone === '7498086090' ? 'Admin' : 'New User',
-          role: phone === '7498086090' ? 'super_admin' : 'gramsevak',
-          village: process.env.DEFAULT_VILLAGE || 'शिवणे'
-        });
-        await user.save();
-      }
-      
-      const token = jwt.sign(
-        { id: user._id, phone: user.phone, role: user.role, name: user.name }, 
-        JWT_SECRET || 'fallback-secret'
-      );
-      
-      console.log(`[AUTH] Login Successful for: ${phone}`);
-      res.json({ 
-        access_token: token, 
-        user: { id: user._id, phone: user.phone, role: user.role, name: user.name } 
+  const { otp, phone } = req.body;
+  if (otp === '123456') {
+    let user = await User.findOne({ phone });
+    if (!user) {
+      user = new User({
+        phone,
+        name: phone === '7498086090' ? 'Admin' : 'New User',
+        role: phone === '7498086090' ? 'super_admin' : 'gramsevak',
+        village: process.env.DEFAULT_VILLAGE
       });
-    } else {
-      res.status(401).json({ detail: 'Invalid OTP' });
+      await user.save();
     }
-  } catch (err) {
-    console.error('[AUTH] ERROR:', err);
-    res.status(500).json({ detail: err.message, error: 'Internal Server Error' });
+    const token = jwt.sign({ id: user._id, phone: user.phone, role: user.role, name: user.name }, JWT_SECRET);
+    res.json({ access_token: token, user: { id: user._id, phone: user.phone, role: user.role, name: user.name } });
+  } else {
+    res.status(401).json({ detail: 'Invalid OTP' });
   }
 });
 
