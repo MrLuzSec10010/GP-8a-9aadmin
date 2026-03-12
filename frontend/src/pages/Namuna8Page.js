@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import html2pdf from 'html2pdf.js';
 import axios from 'axios';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
@@ -43,6 +44,9 @@ export default function Namuna8Page() {
   const [saving, setSaving] = useState(false);
   const [previewDialogOpen, setPreviewDialogOpen] = useState(false);
   const [previewDemand, setPreviewDemand] = useState(null);
+  const previewRef = useRef(null);
+  const receiptRef = useRef(null);
+  const registerRef = useRef(null);
 
   const canEdit = hasRole(['super_admin', 'gramsevak', 'data_entry', 'talathi']);
 
@@ -183,10 +187,31 @@ export default function Namuna8Page() {
   });
 
   const exportToPDF = (singleDemand = null) => {
+    if (singleDemand && previewRef.current) {
+      const element = previewRef.current;
+      const opt = {
+        margin: 10,
+        filename: `Namuna8_${singleDemand.property?.property_id || singleDemand.property?.house_no || 'Record'}.pdf`,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+      };
+      
+      html2pdf().set(opt).from(element).save()
+        .then(() => {
+          toast.success(language === 'mr' ? 'पीडीएफ डाउनलोड झाले' : "PDF Downloaded!");
+        })
+        .catch(err => {
+          console.error("PDF Export Error:", err);
+          toast.error("Failed to generate PDF");
+        });
+      return;
+    }
+
     try {
       const doc = new jsPDF('landscape');
-      const dataSource = singleDemand ? [singleDemand] : demands;
-      const fy = singleDemand ? singleDemand.financial_year : (yearFilter !== 'all' ? yearFilter : financialYears[0]);
+      const dataSource = demands; // Fallback to full register if not single
+      const fy = yearFilter !== 'all' ? yearFilter : financialYears[0];
       
       // Load NotoSansDevanagari if available
       // doc.addFont('fonts/NotoSansDevanagari-Regular.ttf', 'NotoSansDevanagari', 'normal');
@@ -290,6 +315,20 @@ export default function Namuna8Page() {
   };
 
   const downloadReceiptPDF = (receipt) => {
+    if (receiptRef.current) {
+      const element = receiptRef.current;
+      const opt = {
+        margin: 10,
+        filename: `Receipt_${receipt.receipt_no}.pdf`,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+      };
+      
+      html2pdf().set(opt).from(element).save();
+      return;
+    }
+    
     try {
       const doc = new jsPDF();
       doc.setFontSize(18);
@@ -443,7 +482,7 @@ export default function Namuna8Page() {
           </CardTitle>
         </CardHeader>
         <CardContent className="p-0">
-          <div className="table-container">
+          <div ref={registerRef} className="table-container">
             <table className="gov-table" data-testid="demand-table">
               <thead>
                 <tr>
@@ -684,7 +723,7 @@ export default function Namuna8Page() {
               .print-dialog-content { border: none !important; box-shadow: none !important; width: 100% !important; max-width: 100% !important; }
             }
           `}} />
-          <div className="print-receipt-section p-8 bg-white text-black font-serif border-[4px] border-double border-slate-800 m-4 shadow-sm">
+          <div ref={receiptRef} className="print-receipt-section p-8 bg-white text-black font-serif border-[4px] border-double border-slate-800 m-4 shadow-sm">
             <div className="text-center mb-8 border-b border-dashed border-gray-400 pb-4">
               <h1 className="text-3xl font-bold bg-slate-100 py-2 mb-2 inline-block px-8 rounded-full border border-slate-300 shadow-sm">{generatedReceipt?.village} ग्रामपंचायत</h1>
               <h2 className="text-xl text-slate-700">ता. {generatedReceipt?.taluka}, जि. {generatedReceipt?.district}</h2>
@@ -779,10 +818,10 @@ export default function Namuna8Page() {
           </DialogHeader>
 
           {previewDemand && (
-            <div className="border border-slate-300 p-6 bg-white shadow-inner font-serif text-slate-900">
+            <div ref={previewRef} className="border border-slate-300 p-6 bg-white shadow-inner font-serif text-slate-900">
               <div className="text-center mb-6 border-b-2 border-slate-800 pb-4">
                 <h3 className="text-lg font-bold">नमुना ८</h3>
-                <p className="text-sm">नियम ३३ (१)</p>
+                <p className="text-sm">नियम ३२ (१)</p>
                 <h2 className="text-xl font-bold mt-2">सन {previewDemand.financial_year} या वर्षासाठी कर आकारणी नोंदवही</h2>
                 <p className="text-md mt-1">
                   गाव: {previewDemand.property?.village || "शिवणे"} |
