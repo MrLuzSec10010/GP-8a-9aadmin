@@ -263,8 +263,8 @@ export default function Namuna8Page() {
                 <td style="border: 1px solid black; padding: 4px; text-align: center;">${capVal}</td>
                 <td style="border: 1px solid black; padding: 4px; text-align: center;">0.5%</td>
                 <td style="border: 1px solid black; padding: 4px; text-align: right;">${(d.house_tax || 0).toFixed(2)}</td>
-                <td style="border: 1px solid black; padding: 4px; text-align: right;">0.00</td>
-                <td style="border: 1px solid black; padding: 4px; text-align: right;">0.00</td>
+                <td style="border: 1px solid black; padding: 4px; text-align: right;">${(d.light_tax || 0).toFixed(2)}</td>
+                <td style="border: 1px solid black; padding: 4px; text-align: right;">${(d.health_tax || 0).toFixed(2)}</td>
                 <td style="border: 1px solid black; padding: 4px; text-align: right;">${(d.water_tax || 0).toFixed(2)}</td>
                 <td style="border: 1px solid black; padding: 4px; text-align: right; font-weight: bold;">${(d.total_tax || 0).toFixed(2)}</td>
                 <td style="border: 1px solid black; padding: 4px;"></td>
@@ -878,11 +878,11 @@ export default function Namuna8Page() {
                       <td className="border border-slate-800 p-1 text-center">-</td>
                       <td className="border border-slate-800 p-1 text-center">{(previewDemand.house_tax * 12.5).toFixed(0)}</td>
                       <td className="border border-slate-800 p-1 text-center">0.5%</td>
-                      <td className="border border-slate-800 p-1 text-right">{previewDemand.house_tax.toFixed(2)}</td>
-                      <td className="border border-slate-800 p-1 text-right">0.00</td>
-                      <td className="border border-slate-800 p-1 text-right">0.00</td>
-                      <td className="border border-slate-800 p-1 text-right">{previewDemand.water_tax.toFixed(2)}</td>
-                      <td className="border border-slate-800 p-1 text-right font-bold text-blue-800">{previewDemand.total_tax.toFixed(2)}</td>
+                      <td style="border-right-width: 1px;" className="border border-slate-800 p-1 text-right">{previewDemand.house_tax.toFixed(2)}</td>
+                      <td style="border-right-width: 1px;" className="border border-slate-800 p-1 text-right">{(previewDemand.light_tax || 0).toFixed(2)}</td>
+                      <td style="border-right-width: 1px;" className="border border-slate-800 p-1 text-right">{(previewDemand.health_tax || 0).toFixed(2)}</td>
+                      <td style="border-right-width: 1px;" className="border border-slate-800 p-1 text-right">{previewDemand.water_tax.toFixed(2)}</td>
+                      <td style="border-right-width: 1px;" className="border border-slate-800 p-1 text-right font-bold text-blue-800">{previewDemand.total_tax.toFixed(2)}</td>
                       <td className="border border-slate-800 p-1"></td>
                     </tr>
                   </tbody>

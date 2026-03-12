@@ -45,6 +45,8 @@ const DemandSchema = new mongoose.Schema({
   financial_year: { type: String, required: true },
   house_tax: { type: Number, default: 0 },
   water_tax: { type: Number, default: 0 },
+  light_tax: { type: Number, default: 0 },
+  health_tax: { type: Number, default: 0 },
   total_tax: { type: Number, default: 0 },
   arrears: { type: Number, default: 0 },
   net_demand: { type: Number, default: 0 },
@@ -226,12 +228,16 @@ const calculateTax = (prop, rate) => {
   if (rate && rate.rate_per_sqm) rate_val = rate.rate_per_sqm;
 
   const house_tax = area * rate_val;
-  const water_tax = prop.water_connection ? 500 : 0; // Only charge if connection exists
+  const water_tax = prop.water_connection ? (rate?.water_tax_rate || 500) : 0;
+  const light_tax = rate?.light_tax_rate || 0;
+  const health_tax = rate?.cleaning_tax_rate || 0;
   
   return { 
-    house_tax, 
-    water_tax, 
-    total_tax: house_tax + water_tax 
+    house_tax: Math.round(house_tax * 100) / 100,
+    water_tax: Math.round(water_tax * 100) / 100,
+    light_tax: Math.round(light_tax * 100) / 100,
+    health_tax: Math.round(health_tax * 100) / 100,
+    total_tax: Math.round((house_tax + water_tax + light_tax + health_tax) * 100) / 100
   };
 };
 
@@ -273,13 +279,15 @@ app.post('/api/demand/generate', authenticateToken, async (req, res) => {
         const newDemand = new Demand({
           property: prop._id,
           financial_year: financial_year,
-          house_tax: Math.round(house_tax * 100) / 100,
-          water_tax: Math.round(water_tax * 100) / 100,
-          total_tax: Math.round(total_tax * 100) / 100,
+          house_tax: house_tax,
+          water_tax: water_tax,
+          light_tax: light_tax,
+          health_tax: health_tax,
+          total_tax: total_tax,
           arrears: Math.round(arrears * 100) / 100,
-          net_demand: Math.round(net_demand * 100) / 100,
+          net_demand: Math.round((total_tax + arrears) * 100) / 100,
           paid_amount: 0,
-          balance: Math.round(net_demand * 100) / 100,
+          balance: Math.round((total_tax + arrears) * 100) / 100,
           status: 'unpaid'
         });
 
