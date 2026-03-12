@@ -129,11 +129,14 @@ export default function Namuna8Page() {
 
     setSaving(true);
     try {
+      console.log("[PAYMENT] Submitting for demand:", selectedDemand.id, "Amount:", amount);
       const response = await axios.post(`${API}/payment/pay`, {
-        demand_id: selectedDemand.id, // Use demand ID
+        demand_id: selectedDemand.id,
         amount_paid: amount,
         payment_mode: paymentMode
       });
+      
+      console.log("[PAYMENT] Success:", response.data);
       toast.success(`${t('paymentRecorded')} - Receipt: ${response.data.receipt_no}`);
       setPaymentDialogOpen(false);
 
@@ -141,14 +144,18 @@ export default function Namuna8Page() {
         ...response.data.receipt_details,
         receipt_no: response.data.receipt_no
       };
+      
       setGeneratedReceipt(receiptToSave);
       setShowReceiptDialog(true);
 
-      // Auto-generate PDF download as requested
-      downloadReceiptPDF(receiptToSave);
+      // Give a tiny delay for state update before triggering PDF
+      setTimeout(() => {
+        downloadReceiptPDF(receiptToSave);
+      }, 500);
 
       fetchData();
     } catch (error) {
+      console.error("[PAYMENT] Error:", error);
       toast.error(error.response?.data?.detail || 'Failed to record payment');
     } finally {
       setSaving(false);
@@ -187,126 +194,103 @@ export default function Namuna8Page() {
   });
 
   const exportToPDF = (singleDemand = null) => {
-    if (singleDemand && previewRef.current) {
-      const element = previewRef.current;
-      const opt = {
-        margin: 10,
-        filename: `Namuna8_${singleDemand.property?.property_id || singleDemand.property?.house_no || 'Record'}.pdf`,
-        image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true },
-        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-      };
-      
-      html2pdf().set(opt).from(element).save()
-        .then(() => {
-          toast.success(language === 'mr' ? 'पीडीएफ डाउनलोड झाले' : "PDF Downloaded!");
-        })
-        .catch(err => {
-          console.error("PDF Export Error:", err);
-          toast.error("Failed to generate PDF");
-        });
-      return;
-    }
+    // We will create a temporary hidden div with the official 19-column table to export
+    const container = document.createElement('div');
+    container.style.padding = '20px';
+    container.style.width = '1200px'; // Wide enough for 19 columns
+    container.style.backgroundColor = 'white';
+    container.style.fontFamily = 'serif';
 
-    try {
-      const doc = new jsPDF('landscape');
-      const dataSource = demands; // Fallback to full register if not single
-      const fy = yearFilter !== 'all' ? yearFilter : financialYears[0];
-      
-      // Load NotoSansDevanagari if available
-      // doc.addFont('fonts/NotoSansDevanagari-Regular.ttf', 'NotoSansDevanagari', 'normal');
-      // doc.setFont('NotoSansDevanagari');
+    const dataSource = singleDemand ? [singleDemand] : demands;
+    const fy = singleDemand ? singleDemand.financial_year : (yearFilter !== 'all' ? yearFilter : financialYears[0]);
+    const village = properties[0]?.village || "शिवणे";
+    const taluka = properties[0]?.taluka || "हवेली";
+    const district = properties[0]?.district || "पुणे";
 
-      // Header Section
-      doc.setFontSize(10);
-      doc.text("नमुना ८", 148, 10, { align: "center" });
-      doc.text("नियम ३२ (१)", 148, 15, { align: "center" });
-      
-      doc.setFontSize(14);
-      doc.text(`सन ${fy} या वर्षासाठी कर आकारणी नोंदवही`, 148, 25, { align: "center" });
-      doc.text("(Tax Assessment & Demand Register)", 148, 30, { align: "center" });
-      
-      doc.setFontSize(11);
-      const village = properties[0]?.village || "शिवणे";
-      const taluka = properties[0]?.taluka || "हवेली";
-      const district = properties[0]?.district || "पुणे";
-      doc.text(`गाव: ${village} ग्रामपंचायत: ${village} ता: ${taluka} जि: ${district}`, 148, 38, { align: "center" });
+    container.innerHTML = `
+      <div style="text-align: center; margin-bottom: 20px; border-bottom: 2px solid black; padding-bottom: 10px;">
+        <h2 style="font-size: 16px; margin: 0;">नमुना ८</h2>
+        <p style="font-size: 12px; margin: 2px 0;">नियम ३२ (१)</p>
+        <h1 style="font-size: 18px; margin: 5px 0;">सन ${fy} या वर्षासाठी कर आकारणी नोंदवही</h1>
+        <p style="font-size: 14px; margin: 2px 0;">गाव: ${village} | ता: ${taluka} | जि: ${district}</p>
+      </div>
+      <table style="width: 100%; border-collapse: collapse; font-size: 10px; border: 1px solid black;">
+        <thead>
+          <tr style="background-color: #f0f0f0;">
+            ${[
+              "१", "२", "३", "४", "५", "६", "७", "८", "९", "१०", "११", "१२", "१३", "१४", "१५", "१६", "१७", "१८", "१९"
+            ].map(n => `<th style="border: 1px solid black; padding: 4px;">${n}</th>`).join('')}
+          </tr>
+          <tr style="background-color: #e0e0e0; font-size: 8px;">
+            <th style="border: 1px solid black; padding: 4px;">अनुक्रमणिका</th>
+            <th style="border: 1px solid black; padding: 4px;">मालमत्ता क्रमांक</th>
+            <th style="border: 1px solid black; padding: 4px;">मालकाचे नाव</th>
+            <th style="border: 1px solid black; padding: 4px;">भोगवटा धारकाचे नाव</th>
+            <th style="border: 1px solid black; padding: 4px;">मालमत्तेचे वर्णन</th>
+            <th style="border: 1px solid black; padding: 4px;">बांधकाम वर्ष</th>
+            <th style="border: 1px solid black; padding: 4px;">क्षेत्रफळ</th>
+            <th style="border: 1px solid black; padding: 4px;">जमिनीचा दर</th>
+            <th style="border: 1px solid black; padding: 4px;">बांधकाम दर</th>
+            <th style="border: 1px solid black; padding: 4px;">घसारा</th>
+            <th style="border: 1px solid black; padding: 4px;">पद्धतीनुसार आकारणी</th>
+            <th style="border: 1px solid black; padding: 4px;">भांडवली मूल्य</th>
+            <th style="border: 1px solid black; padding: 4px;">कर दर</th>
+            <th style="border: 1px solid black; padding: 4px;">घरपट्टी</th>
+            <th style="border: 1px solid black; padding: 4px;">दिवाबत्ती</th>
+            <th style="border: 1px solid black; padding: 4px;">आरोग्य</th>
+            <th style="border: 1px solid black; padding: 4px;">पाणीपट्टी</th>
+            <th style="border: 1px solid black; padding: 4px;">एकूण</th>
+            <th style="border: 1px solid black; padding: 4px;">शेरा</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${dataSource.map((d, i) => {
+            const prop = d.property || d.property_details || {};
+            const capVal = (d.house_tax * 12.5).toFixed(0);
+            return `
+              <tr>
+                <td style="border: 1px solid black; padding: 4px; text-align: center;">${i + 1}</td>
+                <td style="border: 1px solid black; padding: 4px; text-align: center;">${prop.house_no || prop.property_id || '-'}</td>
+                <td style="border: 1px solid black; padding: 4px;">${prop.owner_name_mr || prop.owner_name || '-'}</td>
+                <td style="border: 1px solid black; padding: 4px;">${prop.occupier_name || prop.owner_name_mr || prop.owner_name || '-'}</td>
+                <td style="border: 1px solid black; padding: 4px;">${prop.construction_type || ''} ${prop.usage_type || ''}</td>
+                <td style="border: 1px solid black; padding: 4px; text-align: center;">${prop.construction_year || '-'}</td>
+                <td style="border: 1px solid black; padding: 4px; text-align: center;">${prop.built_up_area_sqm || 0}</td>
+                <td style="border: 1px solid black; padding: 4px; text-align: center;">2.00</td>
+                <td style="border: 1px solid black; padding: 4px; text-align: center;">0.00</td>
+                <td style="border: 1px solid black; padding: 4px; text-align: center;">0.00</td>
+                <td style="border: 1px solid black; padding: 4px; text-align: center;">-</td>
+                <td style="border: 1px solid black; padding: 4px; text-align: center;">${capVal}</td>
+                <td style="border: 1px solid black; padding: 4px; text-align: center;">0.5%</td>
+                <td style="border: 1px solid black; padding: 4px; text-align: right;">${(d.house_tax || 0).toFixed(2)}</td>
+                <td style="border: 1px solid black; padding: 4px; text-align: right;">0.00</td>
+                <td style="border: 1px solid black; padding: 4px; text-align: right;">0.00</td>
+                <td style="border: 1px solid black; padding: 4px; text-align: right;">${(d.water_tax || 0).toFixed(2)}</td>
+                <td style="border: 1px solid black; padding: 4px; text-align: right; font-weight: bold;">${(d.total_tax || 0).toFixed(2)}</td>
+                <td style="border: 1px solid black; padding: 4px;"></td>
+              </tr>
+            `;
+          }).join('')}
+        </tbody>
+      </table>
+      <div style="margin-top: 40px; display: flex; justify-content: space-between; padding: 0 40px;">
+        <div>शिक्का (Stamp)</div>
+        <div style="text-align: center;">ग्राम सेवक (Gram Sevak)</div>
+        <div>तारीख (Date): ________</div>
+      </div>
+    `;
 
-      const tableColumn = [
-        "१\nअनुक्रमणिका", 
-        "२\nमालमत्ता क्रमांक", 
-        "३\nमालकाचे नाव", 
-        "४\nभोगवटा धारकाचे नाव", 
-        "५\nमालमत्तेचे वर्णन", 
-        "६\nबांधकाम वर्ष", 
-        "७\nक्षेत्रफळ", 
-        "८\nजमिनीचा दर", 
-        "९\nबांधकाम दर", 
-        "१०\nघसारा", 
-        "११\nपद्धतीनुसार आकारणी", 
-        "१२\nभांडवली मूल्य", 
-        "१३\nकर दर", 
-        "१४\nघरपट्टी", 
-        "१५\nदिवाबत्ती", 
-        "१६\nआरोग्य", 
-        "१७\nपाणीपट्टी", 
-        "१८\nएकूण", 
-        "१९\nशेरा"
-      ];
+    const opt = {
+      margin: 10,
+      filename: singleDemand ? `Namuna8_${singleDemand.property?.property_id || 'Record'}.pdf` : `Namuna8_Register_${fy}.pdf`,
+      image: { type: 'jpeg', quality: 0.98 },
+      html2canvas: { scale: 2, useCORS: true },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' }
+    };
 
-      const tableRows = dataSource.map((demand, index) => {
-        const prop = demand.property || demand.property_details || {};
-        const capVal = (demand.house_tax * 12.5).toFixed(0);
-        return [
-          index + 1,
-          prop.house_no || prop.property_id || '-',
-          prop.owner_name_mr || prop.owner_name || '-',
-          prop.occupier_name || '-',
-          `${prop.construction_type || ''} ${prop.usage_type || ''}`,
-          prop.construction_year || '-',
-          prop.built_up_area_sqm || 0,
-          "2.00", // जमिनीचा दर
-          "0.00", // बांधकाम दर
-          "0.00", // घसारा
-          "-",    // आकारणी
-          capVal, // भांडवली मूल्य
-          "0.5%", // कर दर
-          (demand.house_tax || 0).toFixed(2),
-          "0.00",
-          "0.00",
-          (demand.water_tax || 0).toFixed(2),
-          (demand.total_tax || 0).toFixed(2),
-          ""
-        ];
-      });
-
-      autoTable(doc, {
-        head: [tableColumn],
-        body: tableRows,
-        startY: 45,
-        theme: 'grid',
-        styles: { fontSize: 5.5, cellPadding: 1, halign: 'center' },
-        headStyles: { fillColor: [240, 240, 240], textColor: 0, lineWidth: 0.1, minCellHeight: 12 },
-        columnStyles: {
-          2: { halign: 'left', cellWidth: 25 },
-          3: { halign: 'left', cellWidth: 20 },
-        },
-        margin: { left: 5, right: 5 }
-      });
-
-      const finalY = doc.lastAutoTable.finalY + 15;
-      doc.setFontSize(10);
-      doc.text("शिक्का (Stamp)", 40, finalY);
-      doc.text("ग्राम सेवक (Gram Sevak)", 148, finalY, { align: "center" });
-      doc.text("तारीख (Date): ________", 250, finalY);
-
-      const fileName = singleDemand ? `Namuna8_${singleDemand.property?.property_id || singleDemand.property_id}.pdf` : `Namuna_8_Register_${Date.now()}.pdf`;
-      doc.save(fileName);
+    html2pdf().set(opt).from(container).save().then(() => {
       toast.success(language === 'mr' ? 'पीडीएफ डाउनलोड झाले' : "PDF Downloaded!");
-    } catch (error) {
-      console.error("PDF Export Error:", error);
-      toast.error("Failed to generate PDF");
-    }
+    });
   };
 
   const openPreviewDialog = (demand) => {
@@ -818,76 +802,101 @@ export default function Namuna8Page() {
           </DialogHeader>
 
           {previewDemand && (
-            <div ref={previewRef} className="border border-slate-300 p-6 bg-white shadow-inner font-serif text-slate-900">
-              <div className="text-center mb-6 border-b-2 border-slate-800 pb-4">
-                <h3 className="text-lg font-bold">नमुना ८</h3>
-                <p className="text-sm">नियम ३२ (१)</p>
-                <h2 className="text-xl font-bold mt-2">सन {previewDemand.financial_year} या वर्षासाठी कर आकारणी नोंदवही</h2>
-                <p className="text-md mt-1">
-                  गाव: {previewDemand.property?.village || "शिवणे"} |
-                  तालुका: {previewDemand.property?.taluka || "हवेली"} |
-                  जिल्हा: {previewDemand.property?.district || "पुणे"}
-                </p>
-              </div>
+            <div ref={previewRef} className="border border-slate-300 p-4 bg-white shadow-inner font-serif text-slate-900 overflow-x-auto">
+              <div className="min-w-[1000px]">
+                <div className="text-center mb-6 border-b-2 border-slate-800 pb-4">
+                  <h3 className="text-lg font-bold">नमुना ८</h3>
+                  <p className="text-sm">नियम ३२ (१)</p>
+                  <h2 className="text-xl font-bold mt-2">सन {previewDemand.financial_year} या वर्षासाठी कर आकारणी नोंदवही</h2>
+                  <p className="text-md mt-1">
+                    गाव: {previewDemand.property?.village || "शिवणे"} |
+                    तालुका: {previewDemand.property?.taluka || "हवेली"} |
+                    जिल्हा: {previewDemand.property?.district || "पुणे"}
+                  </p>
+                </div>
 
-              <div className="grid grid-cols-2 gap-4 mb-6 bg-slate-50 p-4 rounded border border-slate-200">
-                <div>
-                  <p className="text-sm text-slate-500">मालमत्ता क्र. / House No</p>
-                  <p className="font-bold text-lg">{previewDemand.property?.house_no || "-"}</p>
+                <div className="mb-4 bg-slate-50 p-3 rounded border border-slate-200 grid grid-cols-4 gap-4 text-xs">
+                  <div>
+                    <p className="text-slate-500">मालमत्ता क्र.</p>
+                    <p className="font-bold">{previewDemand.property?.house_no || "-"}</p>
+                  </div>
+                  <div>
+                    <p className="text-slate-500">मालकाचे नाव</p>
+                    <p className="font-bold">{previewDemand.property?.owner_name_mr || previewDemand.property?.owner_name || "-"}</p>
+                  </div>
+                  <div>
+                    <p className="text-slate-500">उपयोग</p>
+                    <p className="font-medium">{previewDemand.property?.usage_type || "-"}</p>
+                  </div>
+                  <div>
+                    <p className="text-slate-500">क्षेत्रफळ</p>
+                    <p className="font-medium">{previewDemand.property?.built_up_area_sqm || "0"} चौ.मी.</p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-sm text-slate-500">मालकाचे नाव / Owner Name</p>
-                  <p className="font-bold text-lg">{previewDemand.property?.owner_name_mr || previewDemand.property?.owner_name || "-"}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-slate-500">उपयोग / Usage Type</p>
-                  <p className="font-medium capitalize">{previewDemand.property?.usage_type || "-"}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-slate-500">बांधकाम क्षेत्र / Built-up Area</p>
-                  <p className="font-medium">{previewDemand.property?.built_up_area_sqm || "0"} sq.m</p>
-                </div>
-              </div>
 
-              <table className="w-full border-collapse border border-slate-400 text-sm">
-                <thead>
-                  <tr className="bg-slate-100">
-                    <th className="border border-slate-400 p-2">तपशील (Description)</th>
-                    <th className="border border-slate-400 p-2 text-right">रक्कम (Amount ₹)</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td className="border border-slate-400 p-2">इमारत कर (House Tax)</td>
-                    <td className="border border-slate-400 p-2 text-right font-mono">{previewDemand.house_tax.toFixed(2)}</td>
-                  </tr>
-                  <tr>
-                    <td className="border border-slate-400 p-2">पाणी कर (Water Tax)</td>
-                    <td className="border border-slate-400 p-2 text-right font-mono">{previewDemand.water_tax.toFixed(2)}</td>
-                  </tr>
-                  <tr className="bg-blue-50 font-bold">
-                    <td className="border border-slate-400 p-2">चालू वर्षाची मागणी (Current Year Demand)</td>
-                    <td className="border border-slate-400 p-2 text-right font-mono">{previewDemand.total_tax.toFixed(2)}</td>
-                  </tr>
-                  <tr>
-                    <td className="border border-slate-400 p-2">थकीत रक्कम (Arrears)</td>
-                    <td className="border border-slate-400 p-2 text-right font-mono">{previewDemand.arrears.toFixed(2)}</td>
-                  </tr>
-                  <tr className="bg-slate-100 font-black text-lg">
-                    <td className="border border-slate-400 p-2">एकूण देय (Net Demand)</td>
-                    <td className="border border-slate-400 p-2 text-right font-mono">{previewDemand.net_demand.toFixed(2)}</td>
-                  </tr>
-                </tbody>
-              </table>
+                <table className="w-full border-collapse border border-slate-800 text-[10px]">
+                  <thead>
+                    <tr className="bg-slate-200">
+                      {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19].map(n => (
+                        <th key={`h-${n}`} className="border border-slate-800 p-1 text-center">{n}</th>
+                      ))}
+                    </tr>
+                    <tr className="bg-slate-100 whitespace-nowrap">
+                      <th className="border border-slate-800 p-1">अनुक्रम</th>
+                      <th className="border border-slate-800 p-1">मालमत्ता क्रमांक</th>
+                      <th className="border border-slate-800 p-1">मालकाचे नाव</th>
+                      <th className="border border-slate-800 p-1">भोगवटादार</th>
+                      <th className="border border-slate-800 p-1">वर्णन</th>
+                      <th className="border border-slate-800 p-1">वर्ष</th>
+                      <th className="border border-slate-800 p-1">क्षेत्रफळ</th>
+                      <th className="border border-slate-800 p-1">जमीन दर</th>
+                      <th className="border border-slate-800 p-1">बांधकाम दर</th>
+                      <th className="border border-slate-800 p-1">घसारा</th>
+                      <th className="border border-slate-800 p-1">पद्धत</th>
+                      <th className="border border-slate-800 p-1">भांडवली मूल्य</th>
+                      <th className="border border-slate-800 p-1">कर दर</th>
+                      <th className="border border-slate-800 p-1">घरपट्टी</th>
+                      <th className="border border-slate-800 p-1">दिवाबत्ती</th>
+                      <th className="border border-slate-800 p-1">आरोग्य</th>
+                      <th className="border border-slate-800 p-1">पाणीपट्टी</th>
+                      <th className="border border-slate-800 p-1">एकूण</th>
+                      <th className="border border-slate-800 p-1">शेरा</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td className="border border-slate-800 p-1 text-center">1</td>
+                      <td className="border border-slate-800 p-1 text-center font-bold">{previewDemand.property?.house_no || "-"}</td>
+                      <td className="border border-slate-800 p-1">{previewDemand.property?.owner_name_mr || "-"}</td>
+                      <td className="border border-slate-800 p-1">{previewDemand.property?.occupier_name || previewDemand.property?.owner_name_mr || "-"}</td>
+                      <td className="border border-slate-800 p-1">{previewDemand.property?.construction_type || ''} {previewDemand.property?.usage_type || ''}</td>
+                      <td className="border border-slate-800 p-1 text-center">{previewDemand.property?.construction_year || '-'}</td>
+                      <td className="border border-slate-800 p-1 text-center">{previewDemand.property?.built_up_area_sqm || 0}</td>
+                      <td className="border border-slate-800 p-1 text-center">2.00</td>
+                      <td className="border border-slate-800 p-1 text-center">0.00</td>
+                      <td className="border border-slate-800 p-1 text-center">0.00</td>
+                      <td className="border border-slate-800 p-1 text-center">-</td>
+                      <td className="border border-slate-800 p-1 text-center">{(previewDemand.house_tax * 12.5).toFixed(0)}</td>
+                      <td className="border border-slate-800 p-1 text-center">0.5%</td>
+                      <td className="border border-slate-800 p-1 text-right">{previewDemand.house_tax.toFixed(2)}</td>
+                      <td className="border border-slate-800 p-1 text-right">0.00</td>
+                      <td className="border border-slate-800 p-1 text-right">0.00</td>
+                      <td className="border border-slate-800 p-1 text-right">{previewDemand.water_tax.toFixed(2)}</td>
+                      <td className="border border-slate-800 p-1 text-right font-bold text-blue-800">{previewDemand.total_tax.toFixed(2)}</td>
+                      <td className="border border-slate-800 p-1"></td>
+                    </tr>
+                  </tbody>
+                </table>
 
-              <div className="mt-12 flex justify-between px-8 italic text-slate-500">
-                <div className="text-center">
-                  <div className="w-32 border-b border-dashed border-slate-400 mb-2 mx-auto"></div>
-                  <p>शिक्का (Stamp)</p>
-                </div>
-                <div className="text-center">
-                  <div className="w-48 border-b border-dashed border-slate-400 mb-2 mx-auto"></div>
-                  <p>ग्राम सेवक (Gram Sevak)</p>
+                <div className="mt-12 flex justify-between px-8 italic text-slate-500 text-xs">
+                  <div className="text-center">
+                    <div className="w-32 border-b border-dashed border-slate-400 mb-2 mx-auto"></div>
+                    <p>शिक्का (Stamp)</p>
+                  </div>
+                  <div className="text-center">
+                    <div className="w-48 border-b border-dashed border-slate-400 mb-2 mx-auto"></div>
+                    <p>ग्राम सेवक (Gram Sevak)</p>
+                  </div>
                 </div>
               </div>
             </div>
