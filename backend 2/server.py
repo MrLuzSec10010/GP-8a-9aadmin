@@ -480,14 +480,14 @@ async def create_property(data: PropertyCreate, user: dict = Depends(verify_toke
     await create_audit_log("property", property_doc["id"], "create", user, None, property_doc, "New property created")
     
     # Auto-generate demand for current financial year
-    current_year = datetime.now().year
-    current_fy = f"{current_year}-{current_year + 1}"
+    current_fy = datetime.now().year
+    current_fy_str = f"{current_fy}-{current_fy + 1}"
     tax_calc = await calculate_tax(property_doc)
     demand_doc = {
         "id": str(uuid.uuid4()),
         "demand_id": generate_demand_id(),
         "property_id": property_doc["id"],
-        "financial_year": current_fy,
+        "financial_year": current_fy_str,
         **tax_calc,
         "arrears": 0,
         "rebate": 0,
@@ -503,6 +503,11 @@ async def create_property(data: PropertyCreate, user: dict = Depends(verify_toke
     await db.demands.insert_one(demand_doc)
     
     return PropertyResponse(**property_doc)
+
+@api_router.post("/property/add", response_model=PropertyResponse)
+async def add_property_alias(data: PropertyCreate, user: dict = Depends(verify_token)):
+    """Alias for /properties - exactly as requested"""
+    return await create_property(data, user)
 
 @api_router.get("/properties", response_model=List[PropertyResponse])
 async def get_properties(

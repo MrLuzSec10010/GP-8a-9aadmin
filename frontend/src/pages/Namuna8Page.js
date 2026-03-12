@@ -59,8 +59,8 @@ export default function Namuna8Page() {
       if (statusFilter && statusFilter !== 'all') params.append('status', statusFilter);
       
       const [demandsRes, propertiesRes] = await Promise.all([
-        axios.get(`${API}/demands?${params.toString()}`),
-        axios.get(`${API}/properties`)
+        axios.get(`${API}/demand/list?${params.toString()}`),
+        axios.get(`${API}/property/list`)
       ]);
       
       setDemands(demandsRes.data);
@@ -154,112 +154,129 @@ export default function Namuna8Page() {
   };
 
   const getStatusBadge = (status) => {
+    const s = status === 'unpaid' ? 'pending' : status;
     const styles = {
-      paid: 'status-badge-paid',
-      pending: 'status-badge-pending',
-      partial: 'status-badge-partial'
-    };
-    const labels = {
-      paid: t('paid'),
-      pending: t('pending'),
-      partial: t('partial')
+      paid: 'bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs font-medium',
+      pending: 'bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full text-xs font-medium',
+      partial: 'bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-xs font-medium'
     };
     return (
-      <span className={`status-badge ${styles[status] || styles.pending}`}>
-        {labels[status] || status}
+      <span className={styles[s] || styles.pending}>
+        {t(s)}
       </span>
     );
   };
 
   // Get properties without demand for selected year
-  const availableProperties = properties.filter(p => 
-    !demands.some(d => d.property_id === p.id && d.financial_year === selectedYear)
-  );
+  const availableProperties = properties.filter(p => {
+    const pId = p._id || p.id;
+    return !demands.some(d => {
+      const dpId = d.property?._id || d.property;
+      return dpId === pId && d.financial_year === selectedYear;
+    });
+  });
 
   const exportToPDF = () => {
-    const doc = new jsPDF('landscape');
-    
-    // Add Marathi Font Support (Mock representation, browser font rendering via jsPDF standard)
-    doc.setFont("helvetica");
+    try {
+      const doc = new jsPDF('landscape');
+      
+      // Header Content
+      doc.setFontSize(16);
+      doc.text("महाराष्ट्र शासन (Government of Maharashtra)", 140, 15, { align: "center" });
+      doc.setFontSize(14);
+      doc.text("डिजिटल ग्रामपंचायत (Digital Gram Panchayat)", 140, 22, { align: "center" });
+      doc.setFontSize(11);
+      doc.text(`गाव: शिवणे, ता: हवेली, जि: पुणे`, 140, 29, { align: "center" });
 
-    // Header Content
-    doc.setFontSize(16);
-    doc.text("Government of Maharashtra", 140, 15, { align: "center" });
-    doc.setFontSize(14);
-    doc.text("Digital Gram Panchayat", 140, 22, { align: "center" });
-    
-    doc.setFontSize(12);
-    doc.text("Taluka: Hatkanangle", 140, 29, { align: "center" });
-    doc.text("District: Kolhapur", 140, 35, { align: "center" });
+      doc.setFontSize(14);
+      doc.text("नमुना नंबर ८ - कर आकारणी व मागणी नोंदवही (Tax Demand Register)", 140, 45, { align: "center" });
 
-    doc.setFontSize(14);
-    doc.text("Namuna 8 - Tax Assessment / Demand Register", 140, 45, { align: "center" });
-
-    // Table Columns & Data Setup
-    const tableColumn = [
-      "No", 
-      "House No", 
-      "Property ID",
-      "Owner Name", 
-      "Fin Year", 
-      "Usage Type",
-      "Area",
-      "House Tax", 
-      "Water Tax", 
-      "Total Tax", 
-      "Arrears", 
-      "Net Demand", 
-      "Paid", 
-      "Balance", 
-      "Status"
-    ];
-    
-    const tableRows = [];
-
-    demands.forEach((demand, index) => {
-      const demandData = [
+      const tableColumn = [
+        "No", "House No", "Property ID", "Owner Name", "FY", "Usage", "Area",
+        "House Tax", "Water Tax", "Light Tax", "Total Tax", "Arrears", "Net Demand", "Paid", "Balance"
+      ];
+      
+      const tableRows = demands.map((demand, index) => [
         index + 1,
         demand.property_details?.house_no || '-',
-        demand.property_id || '-',
+        demand.property_id || demand.property_details?.property_id || '-',
         demand.property_details?.owner_name || '-',
         demand.financial_year,
         demand.property_details?.usage_type || '-',
         demand.property_details?.area || 0,
-        demand.house_tax.toFixed(2),
-        demand.water_tax.toFixed(2),
-        demand.total_tax.toFixed(2),
-        demand.arrears.toFixed(2),
-        demand.net_demand.toFixed(2),
-        demand.amount_paid.toFixed(2),
-        demand.balance.toFixed(2),
-        demand.status.toUpperCase()
-      ];
-      tableRows.push(demandData);
-    });
+        (demand.house_tax || 0).toFixed(2),
+        (demand.water_tax || 0).toFixed(2),
+        (demand.light_tax || 0).toFixed(2),
+        (demand.total_tax || 0).toFixed(2),
+        (demand.arrears || 0).toFixed(2),
+        (demand.net_demand || 0).toFixed(2),
+        (demand.amount_paid || 0).toFixed(2),
+        (demand.balance || 0).toFixed(2)
+      ]);
 
-    // Draw Table
-    doc.autoTable({
-      head: [tableColumn],
-      body: tableRows,
-      startY: 55,
-      theme: 'grid',
-      styles: { fontSize: 8, cellPadding: 2, overflow: 'linebreak' },
-      headStyles: { fillColor: [0, 51, 102], textColor: 255 },
-      alternateRowStyles: { fillColor: [245, 247, 250] },
-      margin: { top: 55 }
-    });
+      doc.autoTable({
+        head: [tableColumn],
+        body: tableRows,
+        startY: 55,
+        theme: 'grid',
+        styles: { fontSize: 7, cellPadding: 1 },
+        headStyles: { fillColor: [0, 51, 102] },
+        margin: { top: 55 }
+      });
 
-    const finalY = doc.lastAutoTable.finalY || 150;
-    
-    // Signatures
-    doc.setFontSize(10);
-    doc.text("Gramsevak Signature", 40, finalY + 30);
-    doc.text("Talathi Signature", 140, finalY + 30, { align: "center" });
-    doc.text("Sarpanch Signature", 240, finalY + 30);
+      const finalY = doc.lastAutoTable.finalY || 150;
+      doc.setFontSize(10);
+      doc.text("Signature: Gramsevak / Sarpanch", 240, finalY + 20);
 
-    // Save
-    doc.save(`Namuna_8_${new Date().getTime()}.pdf`);
-    toast.success("PDF Downloaded successfully!");
+      doc.save(`Namuna_8_${Date.now()}.pdf`);
+      toast.success("Register PDF Downloaded!");
+    } catch (error) {
+      console.error("PDF Export Error:", error);
+      toast.error("Failed to generate PDF");
+    }
+  };
+
+  const downloadReceiptPDF = (receipt) => {
+    try {
+      const doc = new jsPDF();
+      doc.setFontSize(18);
+      doc.text(`${receipt.village} ग्रामपंचायत (Receipt)`, 105, 20, { align: "center" });
+      doc.setFontSize(12);
+      doc.text(`ता: ${receipt.taluka}, जि: ${receipt.district}`, 105, 28, { align: "center" });
+      doc.text("नमुना नंबर १० - कर पावती", 105, 38, { align: "center" });
+
+      doc.line(20, 42, 190, 42);
+
+      doc.text(`पावती क्र: ${receipt.receipt_no}`, 20, 52);
+      doc.text(`दिनांक: ${receipt.date}`, 150, 52);
+      doc.text(`मालमत्ता क्र: ${receipt.property_id}`, 20, 62);
+      doc.text(`आर्थिक वर्ष: ${receipt.financial_year}`, 150, 62);
+
+      doc.text(`श्री/श्रीमती: ${receipt.owner_name_mr || receipt.owner_name}`, 20, 75);
+
+      doc.autoTable({
+        startY: 85,
+        head: [['तपशील (Description)', 'रक्कम (Amount ₹)']],
+        body: [
+          ['एकूण मागणी (Total Demand)', receipt.total_demand.toFixed(2)],
+          ['भरलेली रक्कम (Current Paid)', receipt.amount_paid.toFixed(2)],
+          ['भरणा पद्धत (Mode)', receipt.payment_mode.toUpperCase()]
+        ],
+        theme: 'plain',
+        styles: { fontSize: 11 },
+        headStyles: { fillColor: [240, 240, 240], textColor: 0 }
+      });
+
+      const finalY = doc.lastAutoTable.finalY || 120;
+      doc.text("शिक्का व स्वाक्षरी", 150, finalY + 30);
+      doc.setFontSize(8);
+      doc.text("Generated via Digital Gram Panchayat System", 105, 280, { align: "center" });
+
+      doc.save(`Receipt_${receipt.receipt_no}.pdf`);
+      toast.success("Receipt PDF Downloaded!");
+    } catch (error) {
+      toast.error("Failed to generate Receipt PDF");
+    }
   };
 
   return (
@@ -447,18 +464,16 @@ export default function Namuna8Page() {
                       <td className="text-right font-mono text-sm font-bold text-red-600">{formatCurrency(demand.balance)}</td>
                       <td className="text-center">{getStatusBadge(demand.status)}</td>
                       <td className="text-center">
-                        {canEdit && demand.balance > 0 && (
                           <Button 
                             variant="outline" 
                             size="sm"
                             onClick={() => openPaymentDialog(demand)}
-                            className="text-xs"
+                            className="bg-green-50 text-green-700 border-green-200 hover:bg-green-100 text-xs"
                             data-testid={`pay-btn-${demand.id}`}
                           >
                             <CreditCard size={14} className="mr-1" />
                             {language === 'mr' ? 'भरणा' : 'Pay'}
                           </Button>
-                        )}
                       </td>
                     </tr>
                   ))
@@ -662,6 +677,10 @@ export default function Namuna8Page() {
             <div className="flex gap-2">
               <Button variant="outline" onClick={() => setShowReceiptDialog(false)}>
                 Close
+              </Button>
+              <Button onClick={() => downloadReceiptPDF(generatedReceipt)} className="bg-red-600 hover:bg-red-700 shadow-lg">
+                <Download className="mr-2 h-4 w-4" />
+                Download PDF
               </Button>
               <Button onClick={() => window.print()} className="bg-[#003366] hover:bg-[#002244] shadow-lg">
                 <FileText className="mr-2 h-4 w-4" />

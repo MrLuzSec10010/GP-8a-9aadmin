@@ -75,7 +75,7 @@ export default function Namuna9Page() {
       if (search) params.append('search', search);
       if (wardFilter && wardFilter !== 'all') params.append('ward', wardFilter);
       
-      const response = await axios.get(`${API}/properties?${params.toString()}`);
+      const response = await axios.get(`${API}/property/list?${params.toString()}`);
       setProperties(response.data);
     } catch (error) {
       toast.error('Failed to load properties');
@@ -197,7 +197,7 @@ export default function Namuna9Page() {
         await axios.put(`${API}/properties/${selectedProperty.id}`, payload);
         toast.success(t('propertyUpdated'));
       } else {
-        await axios.post(`${API}/properties`, payload);
+        await axios.post(`${API}/property/add`, payload);
         toast.success(t('propertyCreated'));
       }
       
