@@ -187,42 +187,65 @@ export default function Namuna8Page() {
       const doc = new jsPDF('landscape');
       const dataSource = singleDemand ? [singleDemand] : demands;
       const fy = singleDemand ? singleDemand.financial_year : (yearFilter !== 'all' ? yearFilter : financialYears[0]);
+      
+      // Load NotoSansDevanagari if available
+      // doc.addFont('fonts/NotoSansDevanagari-Regular.ttf', 'NotoSansDevanagari', 'normal');
+      // doc.setFont('NotoSansDevanagari');
 
       // Header Section
       doc.setFontSize(10);
       doc.text("नमुना ८", 148, 10, { align: "center" });
-      doc.text("नियम ३३ (१)", 148, 15, { align: "center" });
-
+      doc.text("नियम ३२ (१)", 148, 15, { align: "center" });
+      
       doc.setFontSize(14);
       doc.text(`सन ${fy} या वर्षासाठी कर आकारणी नोंदवही`, 148, 25, { align: "center" });
-      doc.text("(Tax Assessment & Demand Register)", 148, 32, { align: "center" });
-
+      doc.text("(Tax Assessment & Demand Register)", 148, 30, { align: "center" });
+      
       doc.setFontSize(11);
       const village = properties[0]?.village || "शिवणे";
       const taluka = properties[0]?.taluka || "हवेली";
       const district = properties[0]?.district || "पुणे";
-      doc.text(`गाव: ${village} ग्रामपंचायत: ${village} ता: ${taluka} जि: ${district}`, 148, 40, { align: "center" });
+      doc.text(`गाव: ${village} ग्रामपंचायत: ${village} ता: ${taluka} जि: ${district}`, 148, 38, { align: "center" });
 
-      const tableColumnEn = [
-        "Sr.No", "Prop ID", "Owner", "Occupier", "Desc.", "Year", "Area", "Rate", "Area", "Ded.", "Cap.Val", "Ann.Val", "Tax%", "House", "Light", "Health", "Water", "Total", "Rem."
+      const tableColumn = [
+        "१\nअनुक्रमणिका", 
+        "२\nमालमत्ता क्रमांक", 
+        "३\nमालकाचे नाव", 
+        "४\nभोगवटा धारकाचे नाव", 
+        "५\nमालमत्तेचे वर्णन", 
+        "६\nबांधकाम वर्ष", 
+        "७\nक्षेत्रफळ", 
+        "८\nजमिनीचा दर", 
+        "९\nबांधकाम दर", 
+        "१०\nघसारा", 
+        "११\nपद्धतीनुसार आकारणी", 
+        "१२\nभांडवली मूल्य", 
+        "१३\nकर दर", 
+        "१४\nघरपट्टी", 
+        "१५\nदिवाबत्ती", 
+        "१६\nआरोग्य", 
+        "१७\nपाणीपट्टी", 
+        "१८\nएकूण", 
+        "१९\nशेरा"
       ];
 
       const tableRows = dataSource.map((demand, index) => {
         const prop = demand.property || demand.property_details || {};
+        const capVal = (demand.house_tax * 12.5).toFixed(0);
         return [
           index + 1,
-          prop.house_no || '-',
+          prop.house_no || prop.property_id || '-',
           prop.owner_name_mr || prop.owner_name || '-',
           prop.occupier_name || '-',
           `${prop.construction_type || ''} ${prop.usage_type || ''}`,
           prop.construction_year || '-',
           prop.built_up_area_sqm || 0,
-          "2.00",
-          prop.built_up_area_sqm || 0,
-          "10%",
-          (demand.house_tax * 12.5).toFixed(0), // Mocked Cap Val
-          (demand.house_tax).toFixed(2),
-          "0.5%",
+          "2.00", // जमिनीचा दर
+          "0.00", // बांधकाम दर
+          "0.00", // घसारा
+          "-",    // आकारणी
+          capVal, // भांडवली मूल्य
+          "0.5%", // कर दर
           (demand.house_tax || 0).toFixed(2),
           "0.00",
           "0.00",
@@ -232,28 +255,25 @@ export default function Namuna8Page() {
         ];
       });
 
-      // Mapping numbers row (1-19) as shown in image
-      const numbersRow = Array.from({ length: 19 }, (_, i) => (i + 1).toString());
-
       autoTable(doc, {
-        head: [tableColumnEn, numbersRow],
+        head: [tableColumn],
         body: tableRows,
-        startY: 50,
+        startY: 45,
         theme: 'grid',
-        styles: { fontSize: 6.5, cellPadding: 1, halign: 'center' },
-        headStyles: { fillColor: [240, 240, 240], textColor: 0, lineWidth: 0.1 },
+        styles: { fontSize: 5.5, cellPadding: 1, halign: 'center' },
+        headStyles: { fillColor: [240, 240, 240], textColor: 0, lineWidth: 0.1, minCellHeight: 12 },
         columnStyles: {
-          2: { halign: 'left', cellWidth: 35 },
-          3: { halign: 'left', cellWidth: 25 },
+          2: { halign: 'left', cellWidth: 25 },
+          3: { halign: 'left', cellWidth: 20 },
         },
-        margin: { left: 10, right: 10 }
+        margin: { left: 5, right: 5 }
       });
 
       const finalY = doc.lastAutoTable.finalY + 15;
       doc.setFontSize(10);
       doc.text("शिक्का (Stamp)", 40, finalY);
-      doc.text("ग्राम सेवक (Gram Sevak)", 140, finalY);
-      doc.text("तारीख (Date): ________", 240, finalY);
+      doc.text("ग्राम सेवक (Gram Sevak)", 148, finalY, { align: "center" });
+      doc.text("तारीख (Date): ________", 250, finalY);
 
       const fileName = singleDemand ? `Namuna8_${singleDemand.property?.property_id || singleDemand.property_id}.pdf` : `Namuna_8_Register_${Date.now()}.pdf`;
       doc.save(fileName);
