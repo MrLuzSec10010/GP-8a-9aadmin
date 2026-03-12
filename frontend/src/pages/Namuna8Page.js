@@ -139,10 +139,10 @@ export default function Namuna8Page() {
       };
       setGeneratedReceipt(receiptToSave);
       setShowReceiptDialog(true);
-      
+
       // Auto-generate PDF download as requested
       downloadReceiptPDF(receiptToSave);
-      
+
       fetchData();
     } catch (error) {
       toast.error(error.response?.data?.detail || 'Failed to record payment');
@@ -187,16 +187,16 @@ export default function Namuna8Page() {
       const doc = new jsPDF('landscape');
       const dataSource = singleDemand ? [singleDemand] : demands;
       const fy = singleDemand ? singleDemand.financial_year : (yearFilter !== 'all' ? yearFilter : financialYears[0]);
-      
+
       // Header Section
       doc.setFontSize(10);
       doc.text("नमुना ८", 148, 10, { align: "center" });
       doc.text("नियम ३३ (१)", 148, 15, { align: "center" });
-      
+
       doc.setFontSize(14);
       doc.text(`सन ${fy} या वर्षासाठी कर आकारणी नोंदवही`, 148, 25, { align: "center" });
       doc.text("(Tax Assessment & Demand Register)", 148, 32, { align: "center" });
-      
+
       doc.setFontSize(11);
       const village = properties[0]?.village || "शिवणे";
       const taluka = properties[0]?.taluka || "हवेली";
@@ -233,7 +233,7 @@ export default function Namuna8Page() {
       });
 
       // Mapping numbers row (1-19) as shown in image
-      const numbersRow = Array.from({length: 19}, (_, i) => (i + 1).toString());
+      const numbersRow = Array.from({ length: 19 }, (_, i) => (i + 1).toString());
 
       autoTable(doc, {
         head: [tableColumnEn, numbersRow],
@@ -757,7 +757,7 @@ export default function Namuna8Page() {
               </Button>
             </DialogTitle>
           </DialogHeader>
-          
+
           {previewDemand && (
             <div className="border border-slate-300 p-6 bg-white shadow-inner font-serif text-slate-900">
               <div className="text-center mb-6 border-b-2 border-slate-800 pb-4">
@@ -765,8 +765,8 @@ export default function Namuna8Page() {
                 <p className="text-sm">नियम ३३ (१)</p>
                 <h2 className="text-xl font-bold mt-2">सन {previewDemand.financial_year} या वर्षासाठी कर आकारणी नोंदवही</h2>
                 <p className="text-md mt-1">
-                  गाव: {previewDemand.property?.village || "शिवणे"} | 
-                  तालुका: {previewDemand.property?.taluka || "हवेली"} | 
+                  गाव: {previewDemand.property?.village || "शिवणे"} |
+                  तालुका: {previewDemand.property?.taluka || "हवेली"} |
                   जिल्हा: {previewDemand.property?.district || "पुणे"}
                 </p>
               </div>
