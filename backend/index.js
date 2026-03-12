@@ -45,8 +45,6 @@ const DemandSchema = new mongoose.Schema({
   financial_year: { type: String, required: true },
   house_tax: { type: Number, default: 0 },
   water_tax: { type: Number, default: 0 },
-  light_tax: { type: Number, default: 0 },
-  cleaning_tax: { type: Number, default: 0 },
   total_tax: { type: Number, default: 0 },
   arrears: { type: Number, default: 0 },
   net_demand: { type: Number, default: 0 },
@@ -220,20 +218,20 @@ app.delete(['/api/property/delete/:id', '/api/properties/:id'], authenticateToke
 const calculateTax = (prop, rate) => {
   const area = parseFloat(prop.built_up_area_sqm || 0);
   
-  // Custom Logic with factors if we want, but let's keep it simple as per page
-  const rate_val = rate ? rate.rate_per_sqm : (prop.usage_type === 'commercial' ? 5 : (prop.usage_type === 'mixed' ? 3 : 2));
-  const house_tax = area * rate_val;
+  // Logic: Residential = area * 2, Commercial = area * 5, Mixed = area * 3
+  let rate_val = 2;
+  if (prop.usage_type === 'commercial') rate_val = 5;
+  else if (prop.usage_type === 'mixed') rate_val = 3;
   
-  const water_tax = prop.water_connection ? (rate ? rate.water_tax_rate : 500) : 0;
-  const light_tax = prop.electricity_connection ? (rate ? rate.light_tax_rate : 300) : 0;
-  const cleaning_tax = rate ? rate.cleaning_tax_rate : 200;
+  if (rate && rate.rate_per_sqm) rate_val = rate.rate_per_sqm;
+
+  const house_tax = area * rate_val;
+  const water_tax = prop.water_connection ? 500 : 0; // Only charge if connection exists
   
   return { 
     house_tax, 
     water_tax, 
-    light_tax, 
-    cleaning_tax, 
-    total_tax: house_tax + water_tax + light_tax + cleaning_tax 
+    total_tax: house_tax + water_tax 
   };
 };
 
@@ -251,13 +249,13 @@ app.post('/api/demand/generate', authenticateToken, async (req, res) => {
 
     for (const prop of properties) {
       try {
-        // Strict ID check
         if (!prop || !prop._id) {
           console.error(`[DEMAND GEN] Skipping property - No ID found`, prop);
           errors++;
           continue;
         }
 
+        // Check if demand already exists for this property and year
         const exists = await Demand.findOne({ property: prop._id, financial_year });
         if (exists) {
           skipped++;
@@ -265,19 +263,23 @@ app.post('/api/demand/generate', authenticateToken, async (req, res) => {
         }
         
         const rate = await TaxRate.findOne({ financial_year, usage_type: prop.usage_type });
-        const { house_tax, water_tax, light_tax, cleaning_tax, total_tax } = calculateTax(prop, rate);
+        const { house_tax, water_tax, total_tax } = calculateTax(prop, rate);
         
-        // Use constructor with explicit fields to avoid any mapping issues
+        // Arrears from previous years
+        const previousDemands = await Demand.find({ property: prop._id }).sort({ created_at: -1 });
+        const arrears = previousDemands.length > 0 ? previousDemands[0].balance : 0;
+        const net_demand = total_tax + arrears;
+
         const newDemand = new Demand({
           property: prop._id,
           financial_year: financial_year,
-          house_tax: house_tax || 0,
-          water_tax: water_tax || 0,
-          light_tax: light_tax || 0,
-          cleaning_tax: cleaning_tax || 0,
-          total_tax: total_tax || 0,
-          net_demand: total_tax || 0,
-          balance: total_tax || 0,
+          house_tax: Math.round(house_tax * 100) / 100,
+          water_tax: Math.round(water_tax * 100) / 100,
+          total_tax: Math.round(total_tax * 100) / 100,
+          arrears: Math.round(arrears * 100) / 100,
+          net_demand: Math.round(net_demand * 100) / 100,
+          paid_amount: 0,
+          balance: Math.round(net_demand * 100) / 100,
           status: 'unpaid'
         });
 
@@ -340,47 +342,40 @@ app.get('/api/demand/list', authenticateToken, async (req, res) => {
 // --- Payment & Receipt Endpoint ---
 app.post('/api/payment/pay', authenticateToken, async (req, res) => {
   try {
-    const { demand_id, amount, payment_mode } = req.body;
+    const { demand_id, amount_paid, payment_mode } = req.body;
+    
     const demand = await Demand.findById(demand_id).populate('property');
     if (!demand) return res.status(404).json({ detail: 'Demand not found' });
 
-    const new_paid_amount = demand.paid_amount + amount;
-    const new_balance = demand.net_demand - new_paid_amount;
+    const amount = parseFloat(amount_paid);
+    const new_paid_amount = (demand.paid_amount || 0) + amount;
+    const new_balance = Math.max(0, (demand.net_demand || 0) - new_paid_amount);
     
     demand.paid_amount = new_paid_amount;
     demand.balance = new_balance;
-    demand.status = new_balance <= 0 ? 'paid' : (new_paid_amount > 0 ? 'partial' : 'unpaid');
+    demand.status = new_balance <= 0 ? 'paid' : 'partial';
     await demand.save();
 
     const receipt_no = `RCPT-${Date.now()}`;
     const payment = new Payment({
       demand: demand._id,
-      amount,
+      amount: amount,
       payment_mode,
       receipt_no
     });
     await payment.save();
 
-    // Audit Log for Payment
-    await new AuditLog({
-      entity_type: 'demand',
-      entity_id: demand._id,
-      action: 'payment',
-      user_id: req.user.id,
-      user_name: req.user.name,
-      new_value: { amount, receipt_no, payment_mode }
-    }).save();
-
     res.json({
       message: 'Payment recorded',
       receipt_no,
       receipt_details: {
-        owner_name: demand.property.owner_name,
-        owner_name_mr: demand.property.owner_name_mr,
-        house_no: demand.property.house_no,
-        property_id: demand.property.property_id,
+        owner_name: demand.property?.owner_name || 'N/A',
+        owner_name_mr: demand.property?.owner_name_mr || 'N/A',
+        house_no: demand.property?.house_no || 'N/A',
+        property_id: demand.property?.property_id || 'N/A',
         amount_paid: amount,
         total_demand: demand.net_demand,
+        balance: new_balance,
         date: new Date().toLocaleDateString('en-IN'),
         payment_mode: payment_mode,
         financial_year: demand.financial_year,
@@ -390,6 +385,7 @@ app.post('/api/payment/pay', authenticateToken, async (req, res) => {
       }
     });
   } catch (err) {
+    console.error('Payment Error:', err);
     res.status(500).json({ detail: err.message });
   }
 });

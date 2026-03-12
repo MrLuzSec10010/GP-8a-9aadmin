@@ -11,10 +11,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { Checkbox } from '../components/ui/checkbox';
 import { ScrollArea } from '../components/ui/scroll-area';
-import { 
-  Plus, 
-  Search, 
-  Edit2, 
+import {
+  Plus,
+  Search,
+  Edit2,
   FileText,
   Building2,
   RefreshCw,
@@ -39,7 +39,7 @@ export default function Namuna9Page() {
   const [selectedProperty, setSelectedProperty] = useState(null);
   const [seeding, setSeeding] = useState(false);
   const printRef = useRef(null);
-  
+
   const [formData, setFormData] = useState({
     owner_name: '',
     owner_name_mr: '',
@@ -74,7 +74,7 @@ export default function Namuna9Page() {
       const params = new URLSearchParams();
       if (search) params.append('search', search);
       if (wardFilter && wardFilter !== 'all') params.append('ward', wardFilter);
-      
+
       const response = await axios.get(`${API}/property/list?${params.toString()}`);
       setProperties(response.data);
     } catch (error) {
@@ -200,7 +200,7 @@ export default function Namuna9Page() {
         await axios.post(`${API}/property/add`, payload);
         toast.success(t('propertyCreated'));
       }
-      
+
       setDialogOpen(false);
       resetForm();
       fetchProperties();
@@ -232,31 +232,31 @@ export default function Namuna9Page() {
   };
 
   const getUsageLabel = (type) => {
-    const labels = { 
-      residential: language === 'mr' ? 'निवासी' : 'Residential', 
-      commercial: language === 'mr' ? 'व्यापारी' : 'Commercial', 
-      mixed: language === 'mr' ? 'मिश्र' : 'Mixed' 
+    const labels = {
+      residential: language === 'mr' ? 'निवासी' : 'Residential',
+      commercial: language === 'mr' ? 'व्यापारी' : 'Commercial',
+      mixed: language === 'mr' ? 'मिश्र' : 'Mixed'
     };
     return labels[type] || type;
   };
 
   const getConstructionLabel = (type) => {
-    const labels = { 
-      rcc: 'RCC', 
+    const labels = {
+      rcc: 'RCC',
       load_bearing: language === 'mr' ? 'लोड बेअरिंग' : 'Load Bearing',
-      pucca: language === 'mr' ? 'पक्का' : 'Pucca', 
-      semi_pucca: language === 'mr' ? 'अर्ध-पक्का' : 'Semi-Pucca', 
-      kaccha: language === 'mr' ? 'कच्चा' : 'Kaccha' 
+      pucca: language === 'mr' ? 'पक्का' : 'Pucca',
+      semi_pucca: language === 'mr' ? 'अर्ध-पक्का' : 'Semi-Pucca',
+      kaccha: language === 'mr' ? 'कच्चा' : 'Kaccha'
     };
     return labels[type] || type;
   };
 
   const handleDownloadPDF = () => {
     if (!printRef.current) return;
-    
+
     const printContent = printRef.current.innerHTML;
     const printWindow = window.open('', '_blank');
-    
+
     printWindow.document.write(`
       <!DOCTYPE html>
       <html>
@@ -297,9 +297,9 @@ export default function Namuna9Page() {
       </body>
       </html>
     `);
-    
+
     printWindow.document.close();
-    
+
     setTimeout(() => {
       printWindow.print();
     }, 500);
@@ -323,8 +323,8 @@ export default function Namuna9Page() {
             {language === 'mr' ? 'ताजे करा' : 'Refresh'}
           </Button>
           {properties.length === 0 && (
-            <Button 
-              size="sm" 
+            <Button
+              size="sm"
               variant="outline"
               onClick={handleSeedData}
               disabled={seeding}
@@ -335,8 +335,8 @@ export default function Namuna9Page() {
             </Button>
           )}
           {canEdit && (
-            <Button 
-              size="sm" 
+            <Button
+              size="sm"
               onClick={openAddDialog}
               className="bg-[#003366] hover:bg-[#002244]"
               data-testid="add-property-btn"
@@ -467,9 +467,9 @@ export default function Namuna9Page() {
                   </tr>
                 ) : (
                   properties.map((property) => (
-                    <tr 
-                      key={property.id} 
-                      className="gov-table-row cursor-pointer hover:bg-blue-50" 
+                    <tr
+                      key={property.id}
+                      className="gov-table-row cursor-pointer hover:bg-blue-50"
                       onClick={() => openGovView(property)}
                       data-testid={`property-row-${property.id}`}
                     >
@@ -482,11 +482,10 @@ export default function Namuna9Page() {
                       </td>
                       <td className="text-center">{property.ward_no}</td>
                       <td>
-                        <span className={`px-2 py-1 rounded text-xs font-medium ${
-                          property.usage_type === 'residential' ? 'bg-blue-100 text-blue-700' :
+                        <span className={`px-2 py-1 rounded text-xs font-medium ${property.usage_type === 'residential' ? 'bg-blue-100 text-blue-700' :
                           property.usage_type === 'commercial' ? 'bg-purple-100 text-purple-700' :
-                          'bg-amber-100 text-amber-700'
-                        }`}>
+                            'bg-amber-100 text-amber-700'
+                          }`}>
                           {getUsageLabel(property.usage_type)}
                         </span>
                       </td>
@@ -497,9 +496,9 @@ export default function Namuna9Page() {
                       {canEdit && (
                         <td className="text-center" onClick={(e) => e.stopPropagation()}>
                           <div className="flex items-center justify-center gap-1">
-                            <Button 
-                              variant="ghost" 
-                              size="sm" 
+                            <Button
+                              variant="ghost"
+                              size="sm"
                               onClick={(e) => openEditDialog(property, e)}
                               data-testid={`edit-property-${property.id}`}
                               className="h-8 w-8 p-0"
@@ -507,9 +506,9 @@ export default function Namuna9Page() {
                               <Edit2 size={16} className="text-blue-600" />
                             </Button>
                             {hasRole('super_admin') && (
-                              <Button 
-                                variant="ghost" 
-                                size="sm" 
+                              <Button
+                                variant="ghost"
+                                size="sm"
                                 onClick={(e) => handleDelete(property, e)}
                                 data-testid={`delete-property-${property.id}`}
                                 className="h-8 w-8 p-0"
@@ -693,7 +692,7 @@ export default function Namuna9Page() {
               </div>
               <div className="col-span-2 flex gap-6">
                 <div className="flex items-center gap-2">
-                  <Checkbox 
+                  <Checkbox
                     id="water"
                     checked={formData.water_connection}
                     onCheckedChange={(v) => handleInputChange('water_connection', v)}
@@ -702,7 +701,7 @@ export default function Namuna9Page() {
                   <Label htmlFor="water">{language === 'mr' ? 'पाणी जोडणी' : 'Water Connection'}</Label>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Checkbox 
+                  <Checkbox
                     id="electricity"
                     checked={formData.electricity_connection}
                     onCheckedChange={(v) => handleInputChange('electricity_connection', v)}
@@ -728,8 +727,8 @@ export default function Namuna9Page() {
             <Button variant="outline" onClick={() => setDialogOpen(false)} data-testid="cancel-property-btn">
               {t('cancel')}
             </Button>
-            <Button 
-              onClick={handleSubmit} 
+            <Button
+              onClick={handleSubmit}
               disabled={saving}
               className="bg-[#003366] hover:bg-[#002244]"
               data-testid="save-property-btn"
@@ -749,15 +748,15 @@ export default function Namuna9Page() {
               {language === 'mr' ? 'नमुना ९ - शासकीय स्वरूप' : 'Namuna 9 - Government Format'}
             </DialogTitle>
           </DialogHeader>
-          
+
           <ScrollArea className="max-h-[70vh]">
             {selectedProperty && (
               <div ref={printRef} className="p-8 bg-white" id="gov-format-content">
                 {/* Government Header */}
                 <div className="gov-header text-center border-b-2 border-black pb-4 mb-6">
-                  <img 
-                    src={EMBLEM_URL} 
-                    alt="Emblem of India" 
+                  <img
+                    src={EMBLEM_URL}
+                    alt="Emblem of India"
                     className="emblem w-16 h-16 mx-auto mb-2 object-contain"
                   />
                   <h1 className="gov-title text-lg font-bold">महाराष्ट्र शासन</h1>
@@ -777,13 +776,13 @@ export default function Namuna9Page() {
                   <tbody>
                     <tr>
                       <td className="label border border-black p-2 bg-slate-50 font-semibold w-1/3">
-                        मालमत्ता क्रमांक<br/><span className="bilingual text-xs text-slate-500">Property ID</span>
+                        मालमत्ता क्रमांक<br /><span className="bilingual text-xs text-slate-500">Property ID</span>
                       </td>
                       <td className="value border border-black p-2 font-mono">{selectedProperty.property_id}</td>
                     </tr>
                     <tr>
                       <td className="label border border-black p-2 bg-slate-50 font-semibold">
-                        घर क्रमांक / वॉर्ड क्र.<br/><span className="bilingual text-xs text-slate-500">House No. / Ward No.</span>
+                        घर क्रमांक / वॉर्ड क्र.<br /><span className="bilingual text-xs text-slate-500">House No. / Ward No.</span>
                       </td>
                       <td className="value border border-black p-2">
                         <strong>{selectedProperty.house_no}</strong> / वॉर्ड {selectedProperty.ward_no}
@@ -791,19 +790,19 @@ export default function Namuna9Page() {
                     </tr>
                     <tr>
                       <td className="label border border-black p-2 bg-slate-50 font-semibold">
-                        मालकाचे नाव<br/><span className="bilingual text-xs text-slate-500">Owner Name</span>
+                        मालकाचे नाव<br /><span className="bilingual text-xs text-slate-500">Owner Name</span>
                       </td>
                       <td className="value border border-black p-2">
-                        <strong className="text-lg">{selectedProperty.owner_name_mr}</strong><br/>
+                        <strong className="text-lg">{selectedProperty.owner_name_mr}</strong><br />
                         <span className="text-sm text-slate-600">{selectedProperty.owner_name}</span>
                       </td>
                     </tr>
                     <tr>
                       <td className="label border border-black p-2 bg-slate-50 font-semibold">
-                        वडिलांचे / पतीचे नाव<br/><span className="bilingual text-xs text-slate-500">Father's / Husband's Name</span>
+                        वडिलांचे / पतीचे नाव<br /><span className="bilingual text-xs text-slate-500">Father's / Husband's Name</span>
                       </td>
                       <td className="value border border-black p-2">
-                        {selectedProperty.father_name_mr || '-'}<br/>
+                        {selectedProperty.father_name_mr || '-'}<br />
                         <span className="text-sm text-slate-600">{selectedProperty.father_name || ''}</span>
                       </td>
                     </tr>
@@ -818,7 +817,7 @@ export default function Namuna9Page() {
                   <tbody>
                     <tr>
                       <td className="label border border-black p-2 bg-slate-50 font-semibold w-1/3">
-                        सर्वे / गट क्रमांक<br/><span className="bilingual text-xs text-slate-500">Survey / Gat No.</span>
+                        सर्वे / गट क्रमांक<br /><span className="bilingual text-xs text-slate-500">Survey / Gat No.</span>
                       </td>
                       <td className="value border border-black p-2">
                         {selectedProperty.survey_no || '-'} {selectedProperty.gat_no ? `/ गट: ${selectedProperty.gat_no}` : ''}
@@ -826,7 +825,7 @@ export default function Namuna9Page() {
                     </tr>
                     <tr>
                       <td className="label border border-black p-2 bg-slate-50 font-semibold">
-                        प्लॉट क्षेत्रफळ<br/><span className="bilingual text-xs text-slate-500">Plot Area</span>
+                        प्लॉट क्षेत्रफळ<br /><span className="bilingual text-xs text-slate-500">Plot Area</span>
                       </td>
                       <td className="value border border-black p-2 font-mono">
                         <strong>{selectedProperty.plot_area_sqm.toFixed(2)}</strong> चौ.मी. (sq.m)
@@ -835,7 +834,7 @@ export default function Namuna9Page() {
                     </tr>
                     <tr>
                       <td className="label border border-black p-2 bg-slate-50 font-semibold">
-                        बांधकाम क्षेत्रफळ<br/><span className="bilingual text-xs text-slate-500">Built-up Area</span>
+                        बांधकाम क्षेत्रफळ<br /><span className="bilingual text-xs text-slate-500">Built-up Area</span>
                       </td>
                       <td className="value border border-black p-2 font-mono">
                         <strong>{selectedProperty.built_up_area_sqm.toFixed(2)}</strong> चौ.मी. (sq.m)
@@ -844,26 +843,25 @@ export default function Namuna9Page() {
                     </tr>
                     <tr>
                       <td className="label border border-black p-2 bg-slate-50 font-semibold">
-                        मजले<br/><span className="bilingual text-xs text-slate-500">Number of Floors</span>
+                        मजले<br /><span className="bilingual text-xs text-slate-500">Number of Floors</span>
                       </td>
                       <td className="value border border-black p-2">{selectedProperty.floor_count}</td>
                     </tr>
                     <tr>
                       <td className="label border border-black p-2 bg-slate-50 font-semibold">
-                        बांधकाम प्रकार<br/><span className="bilingual text-xs text-slate-500">Construction Type</span>
+                        बांधकाम प्रकार<br /><span className="bilingual text-xs text-slate-500">Construction Type</span>
                       </td>
                       <td className="value border border-black p-2">{getConstructionLabel(selectedProperty.construction_type)}</td>
                     </tr>
                     <tr>
                       <td className="label border border-black p-2 bg-slate-50 font-semibold">
-                        वापर प्रकार<br/><span className="bilingual text-xs text-slate-500">Usage Type</span>
+                        वापर प्रकार<br /><span className="bilingual text-xs text-slate-500">Usage Type</span>
                       </td>
                       <td className="value border border-black p-2">
-                        <span className={`px-2 py-1 rounded text-sm font-medium ${
-                          selectedProperty.usage_type === 'residential' ? 'bg-blue-100 text-blue-700' :
+                        <span className={`px-2 py-1 rounded text-sm font-medium ${selectedProperty.usage_type === 'residential' ? 'bg-blue-100 text-blue-700' :
                           selectedProperty.usage_type === 'commercial' ? 'bg-purple-100 text-purple-700' :
-                          'bg-amber-100 text-amber-700'
-                        }`}>
+                            'bg-amber-100 text-amber-700'
+                          }`}>
                           {getUsageLabel(selectedProperty.usage_type)}
                         </span>
                       </td>
@@ -879,29 +877,29 @@ export default function Namuna9Page() {
                   <tbody>
                     <tr>
                       <td className="label border border-black p-2 bg-slate-50 font-semibold w-1/3">
-                        पाणी जोडणी<br/><span className="bilingual text-xs text-slate-500">Water Connection</span>
+                        पाणी जोडणी<br /><span className="bilingual text-xs text-slate-500">Water Connection</span>
                       </td>
                       <td className="value border border-black p-2">
-                        {selectedProperty.water_connection ? 
-                          <span className="text-green-600 font-semibold">होय / Yes ✓</span> : 
+                        {selectedProperty.water_connection ?
+                          <span className="text-green-600 font-semibold">होय / Yes ✓</span> :
                           <span className="text-red-600">नाही / No</span>
                         }
                       </td>
                     </tr>
                     <tr>
                       <td className="label border border-black p-2 bg-slate-50 font-semibold">
-                        वीज जोडणी<br/><span className="bilingual text-xs text-slate-500">Electricity Connection</span>
+                        वीज जोडणी<br /><span className="bilingual text-xs text-slate-500">Electricity Connection</span>
                       </td>
                       <td className="value border border-black p-2">
-                        {selectedProperty.electricity_connection ? 
-                          <span className="text-green-600 font-semibold">होय / Yes ✓</span> : 
+                        {selectedProperty.electricity_connection ?
+                          <span className="text-green-600 font-semibold">होय / Yes ✓</span> :
                           <span className="text-red-600">नाही / No</span>
                         }
                       </td>
                     </tr>
                     <tr>
                       <td className="label border border-black p-2 bg-slate-50 font-semibold">
-                        मूल्यांकन वर्ष<br/><span className="bilingual text-xs text-slate-500">Assessment Year</span>
+                        मूल्यांकन वर्ष<br /><span className="bilingual text-xs text-slate-500">Assessment Year</span>
                       </td>
                       <td className="value border border-black p-2">{selectedProperty.assessment_year || new Date().getFullYear() + '-' + (new Date().getFullYear() + 1)}</td>
                     </tr>
@@ -938,11 +936,11 @@ export default function Namuna9Page() {
               </div>
             )}
           </ScrollArea>
-          
+
           <DialogFooter className="p-4 border-t bg-slate-50 flex gap-2">
             {canEdit && (
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 onClick={(e) => { setGovViewOpen(false); openEditDialog(selectedProperty, e); }}
                 data-testid="edit-from-gov-view"
               >
@@ -950,7 +948,7 @@ export default function Namuna9Page() {
                 {language === 'mr' ? 'संपादन करा' : 'Edit'}
               </Button>
             )}
-            <Button 
+            <Button
               onClick={handleDownloadPDF}
               className="bg-[#003366] hover:bg-[#002244]"
               data-testid="download-pdf-btn"
@@ -958,7 +956,7 @@ export default function Namuna9Page() {
               <Download size={16} className="mr-2" />
               {language === 'mr' ? 'PDF डाउनलोड करा' : 'Download PDF'}
             </Button>
-            <Button 
+            <Button
               variant="outline"
               onClick={() => setGovViewOpen(false)}
             >

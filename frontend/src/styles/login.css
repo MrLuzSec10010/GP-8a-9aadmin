@@ -19,7 +19,8 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(10, 37, 64, 0.85); /* Dark blueish overlay that matches screenshot */
+  background: rgba(10, 37, 64, 0.85);
+  /* Dark blueish overlay that matches screenshot */
   z-index: 1;
 }
 
@@ -85,7 +86,8 @@
 
 .login-app-gov {
   font-size: 0.85rem;
-  color: #f6e05e; /* Yellow text */
+  color: #f6e05e;
+  /* Yellow text */
 }
 
 .login-card {
@@ -175,7 +177,8 @@
 }
 
 .login-btn-primary {
-  background-color: #002244; /* Dark blue */
+  background-color: #002244;
+  /* Dark blue */
   color: white;
 }
 

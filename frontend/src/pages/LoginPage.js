@@ -50,7 +50,7 @@ export default function LoginPage() {
   return (
     <div className="login-container">
       <div className="login-overlay"></div>
-      
+
       {showFakeToast && (
         <div className="toast-success-top-right">
           <CheckCircle2 size={16} className="text-green-600" />
@@ -121,9 +121,9 @@ export default function LoginPage() {
                 <ShieldCheck size={18} />
                 Verify OTP
               </button>
-              
-              <button 
-                type="button" 
+
+              <button
+                type="button"
                 onClick={() => setStep(1)}
                 className="login-back-btn"
               >

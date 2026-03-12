@@ -9,8 +9,8 @@ import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
-import { 
-  Plus, 
+import {
+  Plus,
   FileText,
   IndianRupee,
   RefreshCw,
@@ -19,7 +19,7 @@ import {
   Download
 } from 'lucide-react';
 import jsPDF from 'jspdf';
-import 'jspdf-autotable';
+import autoTable from 'jspdf-autotable';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -41,6 +41,8 @@ export default function Namuna8Page() {
   const [paymentAmount, setPaymentAmount] = useState('');
   const [paymentMode, setPaymentMode] = useState('cash');
   const [saving, setSaving] = useState(false);
+  const [previewDialogOpen, setPreviewDialogOpen] = useState(false);
+  const [previewDemand, setPreviewDemand] = useState(null);
 
   const canEdit = hasRole(['super_admin', 'gramsevak', 'data_entry', 'talathi']);
 
@@ -57,12 +59,12 @@ export default function Namuna8Page() {
       const params = new URLSearchParams();
       if (yearFilter && yearFilter !== 'all') params.append('financial_year', yearFilter);
       if (statusFilter && statusFilter !== 'all') params.append('status', statusFilter);
-      
+
       const [demandsRes, propertiesRes] = await Promise.all([
         axios.get(`${API}/demand/list?${params.toString()}`),
         axios.get(`${API}/property/list`)
       ]);
-      
+
       setDemands(demandsRes.data);
       setProperties(propertiesRes.data);
     } catch (error) {
@@ -88,7 +90,7 @@ export default function Namuna8Page() {
         financial_year: selectedYear
       });
       toast.success(
-        language === 'mr' 
+        language === 'mr'
           ? `${response.data.generated_count} नवीन मागण्या तयार केल्या (वगळलेल्या: ${response.data.skipped_count})`
           : `Generated ${response.data.generated_count} demands (Skipped: ${response.data.skipped_count})`
       );
@@ -124,19 +126,23 @@ export default function Namuna8Page() {
     setSaving(true);
     try {
       const response = await axios.post(`${API}/payment/pay`, {
-        demand_id: selectedDemand.id,
-        amount: amount,
+        demand_id: selectedDemand.id, // Use demand ID
+        amount_paid: amount,
         payment_mode: paymentMode
       });
       toast.success(`${t('paymentRecorded')} - Receipt: ${response.data.receipt_no}`);
       setPaymentDialogOpen(false);
-      
+
       const receiptToSave = {
         ...response.data.receipt_details,
         receipt_no: response.data.receipt_no
       };
       setGeneratedReceipt(receiptToSave);
       setShowReceiptDialog(true);
+      
+      // Auto-generate PDF download as requested
+      downloadReceiptPDF(receiptToSave);
+      
       fetchData();
     } catch (error) {
       toast.error(error.response?.data?.detail || 'Failed to record payment');
@@ -176,64 +182,91 @@ export default function Namuna8Page() {
     });
   });
 
-  const exportToPDF = () => {
+  const exportToPDF = (singleDemand = null) => {
     try {
       const doc = new jsPDF('landscape');
+      const dataSource = singleDemand ? [singleDemand] : demands;
+      const fy = singleDemand ? singleDemand.financial_year : (yearFilter !== 'all' ? yearFilter : financialYears[0]);
       
-      // Header Content
-      doc.setFontSize(16);
-      doc.text("महाराष्ट्र शासन (Government of Maharashtra)", 140, 15, { align: "center" });
+      // Header Section
+      doc.setFontSize(10);
+      doc.text("नमुना ८", 148, 10, { align: "center" });
+      doc.text("नियम ३३ (१)", 148, 15, { align: "center" });
+      
       doc.setFontSize(14);
-      doc.text("डिजिटल ग्रामपंचायत (Digital Gram Panchayat)", 140, 22, { align: "center" });
+      doc.text(`सन ${fy} या वर्षासाठी कर आकारणी नोंदवही`, 148, 25, { align: "center" });
+      doc.text("(Tax Assessment & Demand Register)", 148, 32, { align: "center" });
+      
       doc.setFontSize(11);
-      doc.text(`गाव: शिवणे, ता: हवेली, जि: पुणे`, 140, 29, { align: "center" });
+      const village = properties[0]?.village || "शिवणे";
+      const taluka = properties[0]?.taluka || "हवेली";
+      const district = properties[0]?.district || "पुणे";
+      doc.text(`गाव: ${village} ग्रामपंचायत: ${village} ता: ${taluka} जि: ${district}`, 148, 40, { align: "center" });
 
-      doc.setFontSize(14);
-      doc.text("नमुना नंबर ८ - कर आकारणी व मागणी नोंदवही (Tax Demand Register)", 140, 45, { align: "center" });
-
-      const tableColumn = [
-        "No", "House No", "Property ID", "Owner Name", "FY", "Usage", "Area",
-        "House Tax", "Water Tax", "Light Tax", "Total Tax", "Arrears", "Net Demand", "Paid", "Balance"
+      const tableColumnEn = [
+        "Sr.No", "Prop ID", "Owner", "Occupier", "Desc.", "Year", "Area", "Rate", "Area", "Ded.", "Cap.Val", "Ann.Val", "Tax%", "House", "Light", "Health", "Water", "Total", "Rem."
       ];
-      
-      const tableRows = demands.map((demand, index) => [
-        index + 1,
-        demand.property_details?.house_no || '-',
-        demand.property_id || demand.property_details?.property_id || '-',
-        demand.property_details?.owner_name || '-',
-        demand.financial_year,
-        demand.property_details?.usage_type || '-',
-        demand.property_details?.area || 0,
-        (demand.house_tax || 0).toFixed(2),
-        (demand.water_tax || 0).toFixed(2),
-        (demand.light_tax || 0).toFixed(2),
-        (demand.total_tax || 0).toFixed(2),
-        (demand.arrears || 0).toFixed(2),
-        (demand.net_demand || 0).toFixed(2),
-        (demand.amount_paid || 0).toFixed(2),
-        (demand.balance || 0).toFixed(2)
-      ]);
 
-      doc.autoTable({
-        head: [tableColumn],
-        body: tableRows,
-        startY: 55,
-        theme: 'grid',
-        styles: { fontSize: 7, cellPadding: 1 },
-        headStyles: { fillColor: [0, 51, 102] },
-        margin: { top: 55 }
+      const tableRows = dataSource.map((demand, index) => {
+        const prop = demand.property || demand.property_details || {};
+        return [
+          index + 1,
+          prop.house_no || '-',
+          prop.owner_name_mr || prop.owner_name || '-',
+          prop.occupier_name || '-',
+          `${prop.construction_type || ''} ${prop.usage_type || ''}`,
+          prop.construction_year || '-',
+          prop.built_up_area_sqm || 0,
+          "2.00",
+          prop.built_up_area_sqm || 0,
+          "10%",
+          (demand.house_tax * 12.5).toFixed(0), // Mocked Cap Val
+          (demand.house_tax).toFixed(2),
+          "0.5%",
+          (demand.house_tax || 0).toFixed(2),
+          "0.00",
+          "0.00",
+          (demand.water_tax || 0).toFixed(2),
+          (demand.total_tax || 0).toFixed(2),
+          ""
+        ];
       });
 
-      const finalY = doc.lastAutoTable.finalY || 150;
-      doc.setFontSize(10);
-      doc.text("Signature: Gramsevak / Sarpanch", 240, finalY + 20);
+      // Mapping numbers row (1-19) as shown in image
+      const numbersRow = Array.from({length: 19}, (_, i) => (i + 1).toString());
 
-      doc.save(`Namuna_8_${Date.now()}.pdf`);
-      toast.success("Register PDF Downloaded!");
+      autoTable(doc, {
+        head: [tableColumnEn, numbersRow],
+        body: tableRows,
+        startY: 50,
+        theme: 'grid',
+        styles: { fontSize: 6.5, cellPadding: 1, halign: 'center' },
+        headStyles: { fillColor: [240, 240, 240], textColor: 0, lineWidth: 0.1 },
+        columnStyles: {
+          2: { halign: 'left', cellWidth: 35 },
+          3: { halign: 'left', cellWidth: 25 },
+        },
+        margin: { left: 10, right: 10 }
+      });
+
+      const finalY = doc.lastAutoTable.finalY + 15;
+      doc.setFontSize(10);
+      doc.text("शिक्का (Stamp)", 40, finalY);
+      doc.text("ग्राम सेवक (Gram Sevak)", 140, finalY);
+      doc.text("तारीख (Date): ________", 240, finalY);
+
+      const fileName = singleDemand ? `Namuna8_${singleDemand.property?.property_id || singleDemand.property_id}.pdf` : `Namuna_8_Register_${Date.now()}.pdf`;
+      doc.save(fileName);
+      toast.success(language === 'mr' ? 'पीडीएफ डाउनलोड झाले' : "PDF Downloaded!");
     } catch (error) {
       console.error("PDF Export Error:", error);
       toast.error("Failed to generate PDF");
     }
+  };
+
+  const openPreviewDialog = (demand) => {
+    setPreviewDemand(demand);
+    setPreviewDialogOpen(true);
   };
 
   const downloadReceiptPDF = (receipt) => {
@@ -254,13 +287,14 @@ export default function Namuna8Page() {
 
       doc.text(`श्री/श्रीमती: ${receipt.owner_name_mr || receipt.owner_name}`, 20, 75);
 
-      doc.autoTable({
+      autoTable(doc, {
         startY: 85,
         head: [['तपशील (Description)', 'रक्कम (Amount ₹)']],
         body: [
-          ['एकूण मागणी (Total Demand)', receipt.total_demand.toFixed(2)],
-          ['भरलेली रक्कम (Current Paid)', receipt.amount_paid.toFixed(2)],
-          ['भरणा पद्धत (Mode)', receipt.payment_mode.toUpperCase()]
+          ['एकूण मागणी (Total Demand)', (receipt.total_demand || 0).toFixed(2)],
+          ['भरलेली रक्कम (Current Paid)', (receipt.amount_paid || 0).toFixed(2)],
+          ['शिल्लक (Balance)', (receipt.balance || 0).toFixed(2)],
+          ['भरणा पद्धत (Mode)', (receipt.payment_mode || '').toUpperCase()]
         ],
         theme: 'plain',
         styles: { fontSize: 11 },
@@ -299,8 +333,8 @@ export default function Namuna8Page() {
             {language === 'mr' ? 'पीडीएफ डाउनलोड' : 'Download PDF'}
           </Button>
           {canEdit && (
-            <Button 
-              size="sm" 
+            <Button
+              size="sm"
               onClick={() => setGenerateDialogOpen(true)}
               className="bg-[#003366] hover:bg-[#002244]"
               data-testid="generate-demand-btn"
@@ -441,39 +475,59 @@ export default function Namuna8Page() {
                   demands.map((demand) => (
                     <tr key={demand.id} className="gov-table-row" data-testid={`demand-row-${demand.id}`}>
                       <td className="sticky-col bg-white font-medium">
-                        {demand.property_details?.house_no || '-'}
+                        {demand.property?.house_no || demand.property_details?.house_no || '-'}
                       </td>
-                      <td className="text-xs text-slate-500">{demand.property_id}</td>
+                      <td className="text-xs text-slate-500">{demand.property?.property_id || demand.property_id}</td>
                       <td>
                         <div>
-                          <p className="font-medium text-sm">{demand.property_details?.owner_name || '-'}</p>
+                          <p className="font-medium text-sm">{demand.property?.owner_name || demand.property_details?.owner_name || '-'}</p>
                           <p className="text-xs text-slate-500 font-marathi">
-                            {demand.property_details?.owner_name_mr || ''}
+                            {demand.property?.owner_name_mr || demand.property_details?.owner_name_mr || ''}
                           </p>
                         </div>
                       </td>
                       <td className="text-center">{demand.financial_year}</td>
-                      <td className="text-center capitalize text-sm">{demand.property_details?.usage_type || '-'}</td>
-                      <td className="text-center font-mono text-sm">{demand.property_details?.area || '-'}</td>
+                      <td className="text-center capitalize text-sm">{demand.property?.usage_type || demand.property_details?.usage_type || '-'}</td>
+                      <td className="text-center font-mono text-sm">{demand.property?.built_up_area_sqm || demand.property_details?.area || '-'}</td>
                       <td className="text-right font-mono text-sm">{formatCurrency(demand.house_tax)}</td>
                       <td className="text-right font-mono text-sm">{formatCurrency(demand.water_tax)}</td>
                       <td className="text-right font-mono text-sm font-medium">{formatCurrency(demand.total_tax)}</td>
                       <td className="text-right font-mono text-sm text-amber-600">{formatCurrency(demand.arrears)}</td>
                       <td className="text-right font-mono text-sm font-bold text-[#003366]">{formatCurrency(demand.net_demand)}</td>
-                      <td className="text-right font-mono text-sm text-green-600">{formatCurrency(demand.amount_paid)}</td>
+                      <td className="text-right font-mono text-sm text-green-600">{formatCurrency(demand.paid_amount || demand.amount_paid)}</td>
                       <td className="text-right font-mono text-sm font-bold text-red-600">{formatCurrency(demand.balance)}</td>
                       <td className="text-center">{getStatusBadge(demand.status)}</td>
                       <td className="text-center">
-                          <Button 
-                            variant="outline" 
+                        <div className="flex items-center justify-center gap-1">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => openPreviewDialog(demand)}
+                            className="h-8 w-8 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                            title={language === 'mr' ? 'पहा' : 'Preview'}
+                          >
+                            <FileText size={16} />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => exportToPDF(demand)}
+                            className="h-8 w-8 text-red-600 hover:text-red-700 hover:bg-red-50"
+                            title={language === 'mr' ? 'डाउनलोड' : 'Download'}
+                          >
+                            <Download size={16} />
+                          </Button>
+                          <Button
+                            variant="outline"
                             size="sm"
                             onClick={() => openPaymentDialog(demand)}
-                            className="bg-green-50 text-green-700 border-green-200 hover:bg-green-100 text-xs"
+                            className="bg-green-50 text-green-700 border-green-200 hover:bg-green-100 text-xs h-8 px-2"
                             data-testid={`pay-btn-${demand.id}`}
                           >
                             <CreditCard size={14} className="mr-1" />
                             {language === 'mr' ? 'भरणा' : 'Pay'}
                           </Button>
+                        </div>
                       </td>
                     </tr>
                   ))
@@ -505,8 +559,8 @@ export default function Namuna8Page() {
               </Select>
             </div>
             <div className="bg-blue-50 p-3 rounded text-sm text-blue-800">
-              {language === 'mr' 
-                ? 'सिस्टम निवडलेल्या आर्थिक वर्षासाठी सर्व मालमत्तांसाठी कर मागणी स्वयंचलितपणे तयार करेल. (जी आधीपासून अस्तित्वात आहे ती वगळली जाईल).' 
+              {language === 'mr'
+                ? 'सिस्टम निवडलेल्या आर्थिक वर्षासाठी सर्व मालमत्तांसाठी कर मागणी स्वयंचलितपणे तयार करेल. (जी आधीपासून अस्तित्वात आहे ती वगळली जाईल).'
                 : 'The system will automatically generate tax demands for all properties for the selected financial year. Existing demands will be skipped.'}
             </div>
           </div>
@@ -514,8 +568,8 @@ export default function Namuna8Page() {
             <Button variant="outline" onClick={() => setGenerateDialogOpen(false)}>
               {t('cancel')}
             </Button>
-            <Button 
-              onClick={handleGenerateDemand} 
+            <Button
+              onClick={handleGenerateDemand}
               disabled={saving || !selectedYear}
               className="bg-[#003366] hover:bg-[#002244]"
               data-testid="confirm-generate-demand"
@@ -585,8 +639,8 @@ export default function Namuna8Page() {
             <Button variant="outline" onClick={() => setPaymentDialogOpen(false)}>
               {t('cancel')}
             </Button>
-            <Button 
-              onClick={handleRecordPayment} 
+            <Button
+              onClick={handleRecordPayment}
               disabled={saving}
               className="bg-green-600 hover:bg-green-700"
               data-testid="confirm-payment-btn"
@@ -600,7 +654,8 @@ export default function Namuna8Page() {
       {/* Receipt Dialog (Namuna 10) */}
       <Dialog open={showReceiptDialog} onOpenChange={setShowReceiptDialog}>
         <DialogContent className="max-w-2xl p-0 overflow-hidden bg-white print-dialog-content">
-          <style dangerouslySetInnerHTML={{__html: `
+          <style dangerouslySetInnerHTML={{
+            __html: `
             @media print {
               body * { visibility: hidden; }
               .print-receipt-section, .print-receipt-section * { visibility: visible; }
@@ -617,7 +672,7 @@ export default function Namuna8Page() {
                 नमुना नंबर १० (कर पावती)
               </div>
             </div>
-            
+
             <div className="flex justify-between mb-8 text-base bg-slate-50 p-4 border border-slate-200 shadow-inner">
               <div className="space-y-2">
                 <p><strong>पावती क्र.:</strong> <span className="text-red-600 font-mono font-bold tracking-widest">{generatedReceipt?.receipt_no}</span></p>
@@ -667,7 +722,7 @@ export default function Namuna8Page() {
                 <p className="text-sm mt-1 mb-8 text-slate-500">({generatedReceipt?.village} ग्रामपंचायत)</p>
               </div>
             </div>
-            
+
             <div className="mt-4 text-center text-xs text-slate-400 border-t pt-2">
               डिजिटल ग्रामपंचायत प्रणाली द्वारे व्युत्पन्न
             </div>
@@ -687,6 +742,101 @@ export default function Namuna8Page() {
                 Print Namuna 10
               </Button>
             </div>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      {/* Individual Preview Dialog */}
+      <Dialog open={previewDialogOpen} onOpenChange={setPreviewDialogOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex justify-between items-center pr-8">
+              <span>{language === 'mr' ? 'नमुना ८ - पूर्वदृश्य' : 'Namuna 8 - Individual Preview'}</span>
+              <Button size="sm" onClick={() => exportToPDF(previewDemand)} className="bg-red-600 hover:bg-red-700">
+                <Download size={16} className="mr-2" />
+                {language === 'mr' ? 'पीडीएफ डाउनलोड' : 'Download PDF'}
+              </Button>
+            </DialogTitle>
+          </DialogHeader>
+          
+          {previewDemand && (
+            <div className="border border-slate-300 p-6 bg-white shadow-inner font-serif text-slate-900">
+              <div className="text-center mb-6 border-b-2 border-slate-800 pb-4">
+                <h3 className="text-lg font-bold">नमुना ८</h3>
+                <p className="text-sm">नियम ३३ (१)</p>
+                <h2 className="text-xl font-bold mt-2">सन {previewDemand.financial_year} या वर्षासाठी कर आकारणी नोंदवही</h2>
+                <p className="text-md mt-1">
+                  गाव: {previewDemand.property?.village || "शिवणे"} | 
+                  तालुका: {previewDemand.property?.taluka || "हवेली"} | 
+                  जिल्हा: {previewDemand.property?.district || "पुणे"}
+                </p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4 mb-6 bg-slate-50 p-4 rounded border border-slate-200">
+                <div>
+                  <p className="text-sm text-slate-500">मालमत्ता क्र. / House No</p>
+                  <p className="font-bold text-lg">{previewDemand.property?.house_no || "-"}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-slate-500">मालकाचे नाव / Owner Name</p>
+                  <p className="font-bold text-lg">{previewDemand.property?.owner_name_mr || previewDemand.property?.owner_name || "-"}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-slate-500">उपयोग / Usage Type</p>
+                  <p className="font-medium capitalize">{previewDemand.property?.usage_type || "-"}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-slate-500">बांधकाम क्षेत्र / Built-up Area</p>
+                  <p className="font-medium">{previewDemand.property?.built_up_area_sqm || "0"} sq.m</p>
+                </div>
+              </div>
+
+              <table className="w-full border-collapse border border-slate-400 text-sm">
+                <thead>
+                  <tr className="bg-slate-100">
+                    <th className="border border-slate-400 p-2">तपशील (Description)</th>
+                    <th className="border border-slate-400 p-2 text-right">रक्कम (Amount ₹)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td className="border border-slate-400 p-2">इमारत कर (House Tax)</td>
+                    <td className="border border-slate-400 p-2 text-right font-mono">{previewDemand.house_tax.toFixed(2)}</td>
+                  </tr>
+                  <tr>
+                    <td className="border border-slate-400 p-2">पाणी कर (Water Tax)</td>
+                    <td className="border border-slate-400 p-2 text-right font-mono">{previewDemand.water_tax.toFixed(2)}</td>
+                  </tr>
+                  <tr className="bg-blue-50 font-bold">
+                    <td className="border border-slate-400 p-2">चालू वर्षाची मागणी (Current Year Demand)</td>
+                    <td className="border border-slate-400 p-2 text-right font-mono">{previewDemand.total_tax.toFixed(2)}</td>
+                  </tr>
+                  <tr>
+                    <td className="border border-slate-400 p-2">थकीत रक्कम (Arrears)</td>
+                    <td className="border border-slate-400 p-2 text-right font-mono">{previewDemand.arrears.toFixed(2)}</td>
+                  </tr>
+                  <tr className="bg-slate-100 font-black text-lg">
+                    <td className="border border-slate-400 p-2">एकूण देय (Net Demand)</td>
+                    <td className="border border-slate-400 p-2 text-right font-mono">{previewDemand.net_demand.toFixed(2)}</td>
+                  </tr>
+                </tbody>
+              </table>
+
+              <div className="mt-12 flex justify-between px-8 italic text-slate-500">
+                <div className="text-center">
+                  <div className="w-32 border-b border-dashed border-slate-400 mb-2 mx-auto"></div>
+                  <p>शिक्का (Stamp)</p>
+                </div>
+                <div className="text-center">
+                  <div className="w-48 border-b border-dashed border-slate-400 mb-2 mx-auto"></div>
+                  <p>ग्राम सेवक (Gram Sevak)</p>
+                </div>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setPreviewDialogOpen(false)}>
+              {language === 'mr' ? 'बंद करा' : 'Close'}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
