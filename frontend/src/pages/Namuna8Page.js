@@ -196,8 +196,8 @@ export default function Namuna8Page() {
   const exportToPDF = (singleDemand = null) => {
     // We will create a temporary hidden div with the official 19-column table to export
     const container = document.createElement('div');
-    container.style.padding = '20px';
-    container.style.width = '1200px'; // Wide enough for 19 columns
+    container.style.padding = '10px';
+    container.style.width = '1040px'; // Max safe width for A4 Landscape at 96 DPI
     container.style.backgroundColor = 'white';
     container.style.fontFamily = 'serif';
 
@@ -208,39 +208,39 @@ export default function Namuna8Page() {
     const district = properties[0]?.district || "पुणे";
 
     container.innerHTML = `
-      <div style="text-align: center; margin-bottom: 20px; border-bottom: 2px solid black; padding-bottom: 10px;">
-        <h2 style="font-size: 16px; margin: 0;">नमुना ८</h2>
-        <p style="font-size: 12px; margin: 2px 0;">नियम ३२ (१)</p>
-        <h1 style="font-size: 18px; margin: 5px 0;">सन ${fy} या वर्षासाठी कर आकारणी नोंदवही</h1>
-        <p style="font-size: 14px; margin: 2px 0;">गाव: ${village} | ता: ${taluka} | जि: ${district}</p>
+      <div style="text-align: center; margin-bottom: 15px; border-bottom: 2px solid black; padding-bottom: 8px;">
+        <h2 style="font-size: 14px; margin: 0;">नमुना ८</h2>
+        <p style="font-size: 11px; margin: 2px 0;">नियम ३२ (१)</p>
+        <h1 style="font-size: 16px; margin: 4px 0;">सन ${fy} या वर्षासाठी कर आकारणी नोंदवही</h1>
+        <p style="font-size: 12px; margin: 2px 0;">गाव: ${village} | ता: ${taluka} | जि: ${district}</p>
       </div>
-      <table style="width: 100%; border-collapse: collapse; font-size: 10px; border: 1px solid black;">
+      <table style="width: 100%; border-collapse: collapse; font-size: 8px; border: 1px solid black; line-height: 1.2;">
         <thead>
           <tr style="background-color: #f0f0f0;">
             ${[
         "१", "२", "३", "४", "५", "६", "७", "८", "९", "१०", "११", "१२", "१३", "१४", "१५", "१६", "१७", "१८", "१९"
-      ].map(n => `<th style="border: 1px solid black; padding: 4px;">${n}</th>`).join('')}
+      ].map(n => `<th style="border: 1px solid black; padding: 4px 2px; text-align: center; vertical-align: middle;">${n}</th>`).join('')}
           </tr>
-          <tr style="background-color: #e0e0e0; font-size: 8px;">
-            <th style="border: 1px solid black; padding: 4px;">अनुक्रमणिका</th>
-            <th style="border: 1px solid black; padding: 4px;">मालमत्ता क्रमांक</th>
-            <th style="border: 1px solid black; padding: 4px;">मालकाचे नाव</th>
-            <th style="border: 1px solid black; padding: 4px;">भोगवटा धारकाचे नाव</th>
-            <th style="border: 1px solid black; padding: 4px;">मालमत्तेचे वर्णन</th>
-            <th style="border: 1px solid black; padding: 4px;">बांधकाम वर्ष</th>
-            <th style="border: 1px solid black; padding: 4px;">क्षेत्रफळ</th>
-            <th style="border: 1px solid black; padding: 4px;">जमिनीचा दर</th>
-            <th style="border: 1px solid black; padding: 4px;">बांधकाम दर</th>
-            <th style="border: 1px solid black; padding: 4px;">घसारा</th>
-            <th style="border: 1px solid black; padding: 4px;">पद्धतीनुसार आकारणी</th>
-            <th style="border: 1px solid black; padding: 4px;">भांडवली मूल्य</th>
-            <th style="border: 1px solid black; padding: 4px;">कर दर</th>
-            <th style="border: 1px solid black; padding: 4px;">घरपट्टी</th>
-            <th style="border: 1px solid black; padding: 4px;">दिवाबत्ती</th>
-            <th style="border: 1px solid black; padding: 4px;">आरोग्य</th>
-            <th style="border: 1px solid black; padding: 4px;">पाणीपट्टी</th>
-            <th style="border: 1px solid black; padding: 4px;">एकूण</th>
-            <th style="border: 1px solid black; padding: 4px;">शेरा</th>
+          <tr style="background-color: #e0e0e0; font-size: 7.5px;">
+            <th style="border: 1px solid black; padding: 4px 2px; text-align: center; vertical-align: middle;">अनुक्रमणिका</th>
+            <th style="border: 1px solid black; padding: 4px 2px; text-align: center; vertical-align: middle;">मालमत्ता क्रमांक</th>
+            <th style="border: 1px solid black; padding: 4px 2px; text-align: center; vertical-align: middle;">मालकाचे नाव</th>
+            <th style="border: 1px solid black; padding: 4px 2px; text-align: center; vertical-align: middle;">भोगवटा धारकाचे नाव</th>
+            <th style="border: 1px solid black; padding: 4px 2px; text-align: center; vertical-align: middle;">मालमत्तेचे वर्णन</th>
+            <th style="border: 1px solid black; padding: 4px 2px; text-align: center; vertical-align: middle;">बांधकाम वर्ष</th>
+            <th style="border: 1px solid black; padding: 4px 2px; text-align: center; vertical-align: middle;">क्षेत्रफळ</th>
+            <th style="border: 1px solid black; padding: 4px 2px; text-align: center; vertical-align: middle;">जमिनीचा दर</th>
+            <th style="border: 1px solid black; padding: 4px 2px; text-align: center; vertical-align: middle;">बांधकाम दर</th>
+            <th style="border: 1px solid black; padding: 4px 2px; text-align: center; vertical-align: middle;">घसारा</th>
+            <th style="border: 1px solid black; padding: 4px 2px; text-align: center; vertical-align: middle;">पद्धतीनुसार आकारणी</th>
+            <th style="border: 1px solid black; padding: 4px 2px; text-align: center; vertical-align: middle;">भांडवली मूल्य</th>
+            <th style="border: 1px solid black; padding: 4px 2px; text-align: center; vertical-align: middle;">कर दर</th>
+            <th style="border: 1px solid black; padding: 4px 2px; text-align: center; vertical-align: middle;">घरपट्टी</th>
+            <th style="border: 1px solid black; padding: 4px 2px; text-align: center; vertical-align: middle;">दिवाबत्ती</th>
+            <th style="border: 1px solid black; padding: 4px 2px; text-align: center; vertical-align: middle;">आरोग्य</th>
+            <th style="border: 1px solid black; padding: 4px 2px; text-align: center; vertical-align: middle;">पाणीपट्टी</th>
+            <th style="border: 1px solid black; padding: 4px 2px; text-align: center; vertical-align: middle;">एकूण</th>
+            <th style="border: 1px solid black; padding: 4px 2px; text-align: center; vertical-align: middle;">शेरा</th>
           </tr>
         </thead>
         <tbody>
@@ -249,33 +249,39 @@ export default function Namuna8Page() {
         const capVal = (d.house_tax * 12.5).toFixed(0);
         return `
               <tr>
-                <td style="border: 1px solid black; padding: 4px; text-align: center;">${i + 1}</td>
-                <td style="border: 1px solid black; padding: 4px; text-align: center;">${prop.house_no || prop.property_id || '-'}</td>
-                <td style="border: 1px solid black; padding: 4px;">${prop.owner_name_mr || prop.owner_name || '-'}</td>
-                <td style="border: 1px solid black; padding: 4px;">${prop.occupier_name || prop.owner_name_mr || prop.owner_name || '-'}</td>
-                <td style="border: 1px solid black; padding: 4px;">${prop.construction_type || ''} ${prop.usage_type || ''}</td>
-                <td style="border: 1px solid black; padding: 4px; text-align: center;">${prop.construction_year || '-'}</td>
-                <td style="border: 1px solid black; padding: 4px; text-align: center;">${prop.built_up_area_sqm || 0}</td>
-                <td style="border: 1px solid black; padding: 4px; text-align: center;">2.00</td>
-                <td style="border: 1px solid black; padding: 4px; text-align: center;">0.00</td>
-                <td style="border: 1px solid black; padding: 4px; text-align: center;">0.00</td>
-                <td style="border: 1px solid black; padding: 4px; text-align: center;">-</td>
-                <td style="border: 1px solid black; padding: 4px; text-align: center;">${capVal}</td>
-                <td style="border: 1px solid black; padding: 4px; text-align: center;">0.5%</td>
-                <td style="border: 1px solid black; padding: 4px; text-align: right;">${(d.house_tax || 0).toFixed(2)}</td>
-                <td style="border: 1px solid black; padding: 4px; text-align: right;">${(d.light_tax || 0).toFixed(2)}</td>
-                <td style="border: 1px solid black; padding: 4px; text-align: right;">${(d.health_tax || 0).toFixed(2)}</td>
-                <td style="border: 1px solid black; padding: 4px; text-align: right;">${(d.water_tax || 0).toFixed(2)}</td>
-                <td style="border: 1px solid black; padding: 4px; text-align: right; font-weight: bold;">${(d.total_tax || 0).toFixed(2)}</td>
-                <td style="border: 1px solid black; padding: 4px;"></td>
+                <td style="border: 1px solid black; padding: 4px 2px; text-align: center; vertical-align: middle;">${i + 1}</td>
+                <td style="border: 1px solid black; padding: 4px 2px; text-align: center; vertical-align: middle; word-break: break-all;">${prop.house_no || prop.property_id || '-'}</td>
+                <td style="border: 1px solid black; padding: 4px 2px; text-align: center; vertical-align: middle;">${prop.owner_name_mr || prop.owner_name || '-'}</td>
+                <td style="border: 1px solid black; padding: 4px 2px; text-align: center; vertical-align: middle;">${prop.occupier_name || prop.owner_name_mr || prop.owner_name || '-'}</td>
+                <td style="border: 1px solid black; padding: 4px 2px; text-align: center; vertical-align: middle;">${prop.construction_type || ''} ${prop.usage_type || ''}</td>
+                <td style="border: 1px solid black; padding: 4px 2px; text-align: center; vertical-align: middle;">${prop.construction_year || '-'}</td>
+                <td style="border: 1px solid black; padding: 4px 2px; text-align: center; vertical-align: middle;">${prop.built_up_area_sqm || 0}</td>
+                <td style="border: 1px solid black; padding: 4px 2px; text-align: center; vertical-align: middle;">2.0</td>
+                <td style="border: 1px solid black; padding: 4px 2px; text-align: center; vertical-align: middle;">0.0</td>
+                <td style="border: 1px solid black; padding: 4px 2px; text-align: center; vertical-align: middle;">0.0</td>
+                <td style="border: 1px solid black; padding: 4px 2px; text-align: center; vertical-align: middle;">-</td>
+                <td style="border: 1px solid black; padding: 4px 2px; text-align: center; vertical-align: middle;">${capVal}</td>
+                <td style="border: 1px solid black; padding: 4px 2px; text-align: center; vertical-align: middle;">0.5%</td>
+                <td style="border: 1px solid black; padding: 4px 2px; text-align: center; vertical-align: middle;">${(d.house_tax || 0).toFixed(0)}</td>
+                <td style="border: 1px solid black; padding: 4px 2px; text-align: center; vertical-align: middle;">${(d.light_tax || 0).toFixed(0)}</td>
+                <td style="border: 1px solid black; padding: 4px 2px; text-align: center; vertical-align: middle;">${(d.health_tax || 0).toFixed(0)}</td>
+                <td style="border: 1px solid black; padding: 4px 2px; text-align: center; vertical-align: middle;">${(d.water_tax || 0).toFixed(0)}</td>
+                <td style="border: 1px solid black; padding: 4px 2px; text-align: center; vertical-align: middle; font-weight: bold;">${(d.total_tax || 0).toFixed(0)}</td>
+                <td style="border: 1px solid black; padding: 4px 2px; text-align: center; vertical-align: middle;"></td>
               </tr>
             `;
       }).join('')}
         </tbody>
       </table>
-      <div style="margin-top: 40px; display: flex; justify-content: space-between; padding: 0 40px;">
-        <div>शिक्का (Stamp)</div>
-        <div style="text-align: center;">ग्राम सेवक (Gram Sevak)</div>
+      <div style="margin-top: 30px; display: flex; justify-content: space-between; padding: 0 40px; font-size: 10px;">
+        <div style="text-align: center;">
+          <div style="width: 80px; border-bottom: 1px dashed black; margin: 0 auto 5px auto;"></div>
+          शिक्का (Stamp)
+        </div>
+        <div style="text-align: center;">
+          <div style="width: 120px; border-bottom: 1px dashed black; margin: 0 auto 5px auto;"></div>
+          ग्राम सेवक (Gram Sevak)
+        </div>
         <div>तारीख (Date): ________</div>
       </div>
     `;

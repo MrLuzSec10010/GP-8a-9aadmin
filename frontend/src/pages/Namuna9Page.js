@@ -278,9 +278,9 @@ export default function Namuna9Page() {
           .gov-subtitle { font-size: 11pt; margin-top: 2px; }
           .form-title { text-align: center; font-size: 13pt; font-weight: 700; margin: 15px 0; border: 1px solid #000; padding: 8px; background: #f5f5f5; }
           .info-table { width: 100%; border-collapse: collapse; margin: 10px 0; }
-          .info-table td { border: 1px solid #000; padding: 6px 10px; vertical-align: top; }
-          .info-table .label { font-weight: 600; background: #f9f9f9; width: 35%; }
-          .info-table .value { width: 65%; }
+          .info-table td { border: 1px solid #000; padding: 6px 10px; vertical-align: middle; text-align: center; }
+          .info-table .label { font-weight: 600; background: #f9f9f9; width: 35%; text-align: left; }
+          .info-table .value { width: 65%; text-align: left; }
           .section-title { font-weight: 700; background: #e5e5e5; padding: 6px 10px; border: 1px solid #000; margin-top: 15px; }
           .signature-section { margin-top: 40px; display: flex; justify-content: space-between; }
           .signature-box { text-align: center; width: 25%; }
