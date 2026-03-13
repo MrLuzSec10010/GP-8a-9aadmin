@@ -814,11 +814,16 @@ app.post('/api/demand/generate', authenticateToken, tenantMiddleware, async (req
   try {
     const { financial_year } = req.body;
     if (!financial_year) return res.status(400).json({ detail: "Financial year is required" });
-    if (!req.gram_panchayat_id) return res.status(400).json({ detail: "Gram Panchayat assignment required" });
 
-    console.log(`[DEMAND GEN] Starting for FY: ${financial_year}, GP: ${req.gram_panchayat_id}`);
-    // Only get properties for this GP
-    const properties = await Property.find({ gram_panchayat: req.gram_panchayat_id });
+    console.log(`[DEMAND GEN] Starting for FY: ${financial_year}, GP: ${req.gram_panchayat_id || 'ALL (super_admin)'}`);
+
+    // If gram_panchayat_id exists, filter by it. Otherwise (super admin), get all properties
+    const propertyQuery = req.gram_panchayat_id ? { gram_panchayat: req.gram_panchayat_id } : {};
+    const properties = await Property.find(propertyQuery);
+
+    if (properties.length === 0) {
+      return res.status(400).json({ detail: "No properties found. Please add properties first." });
+    }
 
     let generated = 0;
     let skipped = 0;
@@ -826,32 +831,26 @@ app.post('/api/demand/generate', authenticateToken, tenantMiddleware, async (req
 
     for (const prop of properties) {
       try {
-        if (!prop || !prop._id) {
-          errors++;
-          continue;
-        }
+        if (!prop || !prop._id) { errors++; continue; }
 
-        const exists = await Demand.findOne({ property: prop._id, financial_year, gram_panchayat: req.gram_panchayat_id });
-        if (exists) {
-          skipped++;
-          continue;
-        }
+        // Use property's own gram_panchayat if session doesn't have one
+        const gpId = req.gram_panchayat_id || prop.gram_panchayat;
+        if (!gpId) { errors++; continue; }
 
-        const rate = await TaxRate.findOne({ financial_year, usage_type: prop.usage_type, gram_panchayat: req.gram_panchayat_id });
+        const exists = await Demand.findOne({ property: prop._id, financial_year, gram_panchayat: gpId });
+        if (exists) { skipped++; continue; }
+
+        const rate = await TaxRate.findOne({ financial_year, usage_type: prop.usage_type, gram_panchayat: gpId });
         const { house_tax, water_tax, light_tax, health_tax, total_tax } = calculateTax(prop, rate);
 
-        const previousDemands = await Demand.find({ property: prop._id, gram_panchayat: req.gram_panchayat_id }).sort({ created_at: -1 });
+        const previousDemands = await Demand.find({ property: prop._id, gram_panchayat: gpId }).sort({ created_at: -1 });
         const arrears = previousDemands.length > 0 ? previousDemands[0].balance : 0;
 
         const newDemand = new Demand({
-          gram_panchayat: req.gram_panchayat_id,
+          gram_panchayat: gpId,
           property: prop._id,
           financial_year,
-          house_tax,
-          water_tax,
-          light_tax,
-          health_tax,
-          total_tax,
+          house_tax, water_tax, light_tax, health_tax, total_tax,
           arrears: Math.round(arrears * 100) / 100,
           net_demand: Math.round((total_tax + arrears) * 100) / 100,
           paid_amount: 0,
@@ -937,6 +936,9 @@ app.post('/api/payment/pay', authenticateToken, tenantMiddleware, async (req, re
     const demand = await Demand.findOne(demandQuery).populate('property');
     if (!demand) return res.status(404).json({ detail: 'Demand not found' });
 
+    // Use demand's gram_panchayat if not available from session (Super Admin case)
+    const gpId = req.gram_panchayat_id || demand.gram_panchayat;
+
     const amount = parseFloat(amount_paid);
     const new_paid_amount = (demand.paid_amount || 0) + amount;
     const new_balance = Math.max(0, (demand.net_demand || 0) - new_paid_amount);
@@ -948,7 +950,7 @@ app.post('/api/payment/pay', authenticateToken, tenantMiddleware, async (req, re
 
     const receipt_no = `RCPT-${Date.now()}`;
     const payment = new Payment({
-      gram_panchayat: req.gram_panchayat_id,
+      gram_panchayat: gpId,
       demand: demand._id,
       amount: amount,
       payment_mode,
@@ -958,8 +960,8 @@ app.post('/api/payment/pay', authenticateToken, tenantMiddleware, async (req, re
 
     // Get GP details for receipt
     let gpDetails = {};
-    if (req.gram_panchayat_id) {
-      const gp = await GramPanchayat.findById(req.gram_panchayat_id);
+    if (gpId) {
+      const gp = await GramPanchayat.findById(gpId);
       if (gp) gpDetails = { village: gp.village, taluka: gp.taluka, district: gp.district };
     }
 

@@ -238,7 +238,7 @@ export default function LoginPage() {
       </div>
 
       <div className="login-footer">
-        © 2024 Rural Development Department, Govt. of Maharashtra
+        © 2026 Rural Development Department, Govt. of Maharashtra
       </div>
     </div>
   );
