@@ -48,6 +48,18 @@ export function AuthProvider({ children }) {
     return response.data;
   };
 
+  const loginWithPassword = async (username, password) => {
+    const response = await axios.post(`${API}/auth/login`, { username, password });
+    const { access_token, user: userData } = response.data;
+    
+    localStorage.setItem('gram-token', access_token);
+    axios.defaults.headers.common['Authorization'] = `Bearer ${access_token}`;
+    setToken(access_token);
+    setUser(userData);
+    
+    return response.data;
+  };
+
   const logout = () => {
     localStorage.removeItem('gram-token');
     delete axios.defaults.headers.common['Authorization'];
@@ -74,10 +86,13 @@ export function AuthProvider({ children }) {
       loading,
       sendOtp,
       verifyOtp,
+      loginWithPassword,
       logout,
       updateProfile,
       hasRole,
-      isAuthenticated: !!user
+      isAuthenticated: !!user,
+      gramPanchayatId: user?.gram_panchayat_id || null,
+      gramPanchayatName: user?.gram_panchayat_name || null
     }}>
       {children}
     </AuthContext.Provider>

@@ -10,6 +10,7 @@ import Namuna8Page from "./pages/Namuna8Page";
 import TaxEnginePage from "./pages/TaxEnginePage";
 import AuditLogsPage from "./pages/AuditLogsPage";
 import UsersPage from "./pages/UsersPage";
+import SuperAdminPage from "./pages/SuperAdminPage";
 import Layout from "./components/Layout";
 import "./App.css";
 
@@ -79,6 +80,13 @@ function AppRoutes() {
         <PrivateRoute>
           <Layout>
             <UsersPage />
+          </Layout>
+        </PrivateRoute>
+      } />
+      <Route path="/super-admin" element={
+        <PrivateRoute>
+          <Layout>
+            <SuperAdminPage />
           </Layout>
         </PrivateRoute>
       } />

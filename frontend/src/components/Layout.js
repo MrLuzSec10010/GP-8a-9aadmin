@@ -14,7 +14,8 @@ import {
   Globe,
   Menu,
   X,
-  ChevronDown
+  ChevronDown,
+  Landmark
 } from 'lucide-react';
 import { Button } from './ui/button';
 import {
@@ -33,12 +34,13 @@ export default function Layout({ children }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const navItems = [
-    { path: '/', icon: LayoutDashboard, label: 'dashboard', roles: ['super_admin', 'talathi', 'gramsevak', 'data_entry', 'auditor', 'citizen'] },
-    { path: '/namuna-9', icon: Building2, label: 'namuna9', roles: ['super_admin', 'talathi', 'gramsevak', 'data_entry', 'auditor', 'citizen'] },
-    { path: '/namuna-8', icon: FileText, label: 'namuna8', roles: ['super_admin', 'talathi', 'gramsevak', 'data_entry', 'auditor', 'citizen'] },
-    { path: '/tax-engine', icon: Calculator, label: 'taxEngine', roles: ['super_admin', 'gramsevak'] },
-    { path: '/users', icon: Users, label: 'users', roles: ['super_admin', 'gramsevak'] },
-    { path: '/audit-logs', icon: ClipboardList, label: 'auditLogs', roles: ['super_admin', 'auditor', 'gramsevak'] },
+    { path: '/', icon: LayoutDashboard, label: 'dashboard', roles: ['super_admin', 'admin', 'talathi', 'gramsevak', 'accountant', 'data_entry', 'auditor', 'citizen'] },
+    { path: '/namuna-9', icon: Building2, label: 'namuna9', roles: ['super_admin', 'admin', 'talathi', 'gramsevak', 'accountant', 'data_entry', 'auditor', 'citizen'] },
+    { path: '/namuna-8', icon: FileText, label: 'namuna8', roles: ['super_admin', 'admin', 'talathi', 'gramsevak', 'accountant', 'data_entry', 'auditor', 'citizen'] },
+    { path: '/tax-engine', icon: Calculator, label: 'taxEngine', roles: ['super_admin', 'admin', 'gramsevak'] },
+    { path: '/users', icon: Users, label: 'users', roles: ['super_admin', 'admin', 'gramsevak'] },
+    { path: '/audit-logs', icon: ClipboardList, label: 'auditLogs', roles: ['super_admin', 'admin', 'auditor', 'gramsevak'] },
+    { path: '/super-admin', icon: Landmark, label: language === 'mr' ? 'सुपर अॅडमिन' : 'Super Admin', roles: ['super_admin'], isRaw: true },
   ];
 
   const filteredNavItems = navItems.filter(item => hasRole(item.roles));
@@ -96,7 +98,7 @@ export default function Layout({ children }) {
                 data-testid={`nav-${item.label}`}
               >
                 <Icon size={20} strokeWidth={1.5} />
-                <span className="text-sm">{t(item.label)}</span>
+                <span className="text-sm">{item.isRaw ? item.label : t(item.label)}</span>
               </Link>
             );
           })}
